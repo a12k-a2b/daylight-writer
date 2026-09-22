@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Daylight Sol:OS Official Design Tokens
+   Target: Daylight Computer (DC1) 10.5" 4:3 LivePaper Reflective LCD
+   Profile: 8-bit Grayscale (256 discrete levels), 60Hz-120Hz Native Refresh
+   Zero EPD Screen-Flash / Fluid Skia/HWUI Pipeline
+   ========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. Sol:OS Calibrated Neutral Grayscale Tokens (0 to 255)
+     ------------------------------------------------------------------------ */
+  --os-0: #FFFFFF;              /* 255: Base paper ground / canvas background */
+  --os-50: #F7F7F7;             /* 247: Drawer surface, card panels, floating overlays */
+  --os-100: #DCD5C9;            /* 215: Hairline borders (1px), dividers, subtle outlines */
+  --os-100-alpha: rgba(0, 0, 0, 0.08); /* Translucent hairline overlay */
+  --os-150: #F5F5F5;            /* 245: Recessed input fields, search background */
+  --os-200: #CCCCCC;            /* 204: Disabled buttons, inactive indicators, leader lines */
+  --os-300: #858585;            /* 133: Low-emphasis text, dimmed focus text, clock */
+  --os-400: #535353;            /* 83:  Secondary text ink, snippet previews, sibling sentence */
+  --os-800: #343434;            /* 52:  Hover / pressed control states, active pills, selection */
+  --os-900: #1A1A1A;            /* 26:  Primary text ink, document headings, active paragraph */
+  --os-1000: #000000;           /* 0:   Maximum black ink, active focused sentence */
+
+  /* ------------------------------------------------------------------------
+     2. Calibrated Brand Grays (Perceptually Uniform on Reflective Panel)
+     ------------------------------------------------------------------------ */
+  --os-brand-yellow: #CECECE;   /* Calibrated brand yellow -> gray (206) */
+  --os-brand-amber: #9D9D9E;    /* Calibrated brand amber -> gray (157) */
+  --os-brand-orange: #6C6C6D;   /* Calibrated brand orange -> gray (108) */
+
+  /* ------------------------------------------------------------------------
+     3. Semantic Surface & Background Tokens
+     ------------------------------------------------------------------------ */
+  --color-canvas-bg: var(--os-0);
+  --color-surface-panel: var(--os-50);
+  --color-surface-input: var(--os-150);
+  --color-surface-hover: var(--os-100);
+  --color-surface-active: var(--os-800);
+  --color-surface-active-text: var(--os-0);
+
+  /* ------------------------------------------------------------------------
+     4. Semantic Typography Ink Tokens
+     ------------------------------------------------------------------------ */
+  --color-text-primary: var(--os-900);
+  --color-text-emphasis: var(--os-1000);
+  --color-text-secondary: var(--os-400);
+  --color-text-tertiary: var(--os-300);
+  --color-text-disabled: var(--os-200);
+  --color-text-inverted: var(--os-0);
+
+  /* ------------------------------------------------------------------------
+     5. Semantic Borders & Structural Lines
+     ------------------------------------------------------------------------ */
+  --color-border-hairline: var(--os-100);
+  --color-border-focus: var(--os-900);
+  --color-border-leader: var(--os-200);
+
+  /* ------------------------------------------------------------------------
+     6. Focus Mode Contrast Tokens
+     ------------------------------------------------------------------------ */
+  --color-focus-sentence-active: var(--os-1000);
+  --color-focus-sentence-sibling: var(--os-400);
+  --color-focus-paragraph-dimmed: var(--os-300);
+  --color-focus-deep-dimmed: var(--os-200);
+
+  /* ------------------------------------------------------------------------
+     7. AI & Non-Modal Critique Tokens
+     ------------------------------------------------------------------------ */
+  --color-ai-streaming: var(--os-400);
+  --color-critique-passive: var(--os-300);
+  --color-critique-clarity: var(--os-400);
+
+  /* ------------------------------------------------------------------------
+     8. Typography Family & Metric Tokens
+     ------------------------------------------------------------------------ */
+  --font-mono: "iA Writer Mono", "JetBrains Mono", "SF Mono", "Menlo", "Courier New", monospace;
+  --font-proportional: "Inter", "Newsreader", "Charter", system-ui, -apple-system, serif;
+  --font-body: var(--font-mono);
+
+  --font-size-base: 20px;       /* 1.25rem at 270 DPI */
+  --line-height-base: 1.7;      /* Generous ~34px leading */
+  --paragraph-spacing: 1.5em;   /* 30px paragraph bottom gap */
+
+  /* ------------------------------------------------------------------------
+     9. DC1 Physical & Logical Viewport Constraints
+     ------------------------------------------------------------------------ */
+  --viewport-width: 1584px;     /* Active landscape width (+8px inset) */
+  --viewport-height: 1184px;    /* Active landscape height (+8px inset) */
+  --typewriter-midpoint-y: 592px; /* Exact 50% viewport vertical center */
+
+  --canvas-max-width: 720px;    /* Optimal 65-75 characters per line (CPL) */
+  --drawer-left-width: 320px;   /* Library & Search navigation drawer */
+  --drawer-right-width: 360px;  /* Thought Margin scratchpad drawer */
+
+  /* ------------------------------------------------------------------------
+     10. Fluid Animation & Timing Standards (Zero EPD screen-flash)
+     ------------------------------------------------------------------------ */
+  --transition-drawer: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-color: 150ms ease-out;
+  --transition-fade: 150ms ease-out;
+}

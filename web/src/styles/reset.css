@@ -1,0 +1,105 @@
+/* ==========================================================================
+   Daylight Sol:OS Base & Reset Styles
+   Target: Daylight Computer DC1 (10.5" LivePaper Display)
+   Zero EPD Screen-Flash / 60Hz-120Hz Fluid Rendering
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-canvas-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* Sol:OS Inverted High-Contrast Selection */
+::selection {
+  background-color: var(--os-800);
+  color: var(--os-0);
+}
+
+/* Caret & Editing Controls */
+input,
+textarea,
+[contenteditable="true"] {
+  caret-color: var(--color-text-primary);
+  user-select: text;
+}
+
+/* Accessible Monochrome Focus Visible Ring */
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
+/* Form Controls Reset */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* --------------------------------------------------------------------------
+   Scrollbar Utilities (Standard CSS per Baseline)
+   -------------------------------------------------------------------------- */
+
+/* Completely hide scrollbars while preserving scrollability (Typewriter Canvas) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hairline scrollbar for drawers */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--os-200) var(--os-50);
+}
+
+@supports not (scrollbar-color: auto) {
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--os-200);
+    border-radius: 2px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background-color: var(--os-50);
+  }
+}

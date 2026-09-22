@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="Distraction-free landscape typewriter for the Daylight Computer (DC1) 10.5-inch LivePaper display" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Daylight Writer</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="/src/styles/tokens.css" />
+    <link rel="stylesheet" href="/src/styles/reset.css" />
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <div id="app" class="dc1-shell">
+      <!-- Left Drawer: Document Library (320px) -->
+      <aside id="library-drawer" class="drawer drawer-left thin-scrollbar" aria-label="Document Library" aria-hidden="true">
+        <div class="drawer-header">
+          <div class="drawer-title-row">
+            <span class="drawer-heading">Library</span>
+            <button id="btn-new-doc" class="btn-new-doc" title="New Document (Cmd+N)">+ New</button>
+          </div>
+          <div class="search-bar-container">
+            <input
+              id="library-search-input"
+              class="search-input"
+              type="search"
+              placeholder="Search docs, tags, notes... (/)"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button id="search-clear-btn" class="search-clear-btn" title="Clear search" aria-label="Clear search" hidden>×</button>
+          </div>
+          <div class="sort-segmented-control" role="group" aria-label="Sort documents">
+            <button id="sort-modified" class="sort-btn active" data-sort="updated_at">Modified</button>
+            <button id="sort-created" class="sort-btn" data-sort="created_at">Created</button>
+          </div>
+        </div>
+
+        <div id="active-filter-banner" class="active-filter-banner" hidden></div>
+
+        <div id="tag-tree-section" class="tag-tree-section">
+          <div class="tag-tree-header">
+            <span class="tag-tree-title">Tags</span>
+          </div>
+          <div id="tag-tree-container" class="tag-tree-container thin-scrollbar">
+            <!-- Hierarchical nested tags rendered dynamically -->
+          </div>
+        </div>
+
+        <div id="document-list-container" class="document-list-container thin-scrollbar" role="list">
+          <!-- Document item cards rendered dynamically -->
+        </div>
+
+        <div class="drawer-footer">
+          <span id="doc-count-indicator" class="doc-count-indicator">0 documents</span>
+        </div>
+      </aside>
+
+      <!-- Central Viewport: Typewriter Canvas -->
+      <main id="editor-viewport" class="editor-viewport">
+        <header class="editor-header">
+          <div class="header-left-group">
+            <button id="header-outline-btn" class="header-action-btn" title="Toggle Outline (Cmd+[)" aria-label="Toggle Outline">§ Outline</button>
+            <div
+              id="doc-title"
+              class="doc-title"
+              contenteditable="true"
+              spellcheck="false"
+              role="heading"
+              aria-level="1"
+              title="Click to edit title"
+            >
+              Untitled Document
+            </div>
+          </div>
+          <div class="header-right-group">
+            <button id="header-notes-btn" class="header-action-btn" title="Toggle Margin Notes (Cmd+])" aria-label="Toggle Margin Notes">✎ Notes</button>
+            <button id="header-collab-btn" class="header-action-btn" title="Live Collaboration (Cmd+Shift+C)" aria-label="Live Collaboration">Collab</button>
+            <button id="header-export-btn" class="header-action-btn" title="Export & Share (Cmd+Shift+E)" aria-label="Export & Share">Export</button>
+            <div id="sync-status-pill" class="sync-status-pill sync-state-synced" role="status" aria-live="polite">
+              <span class="sync-status-glyph" aria-hidden="true">✓</span>
+              <span class="sync-status-label">Synced</span>
+            </div>
+            <div id="live-datetime" class="live-datetime" aria-live="off">
+              <!-- Formatted date/time: e.g. 10:42 AM · Mon Sep 21 -->
+            </div>
+          </div>
+        </header>
+
+        <div id="editor-scroll-container" class="editor-scroll-container no-scrollbar">
+          <div
+            id="editor-canvas"
+            class="editor-canvas"
+            contenteditable="true"
+            spellcheck="true"
+            role="textbox"
+            aria-multiline="true"
+            aria-label="Distraction-free typewriter canvas"
+          >
+            <p data-block-id="p-0" class="editor-paragraph"><br /></p>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Drawer: Thought Margin Scratchpad (360px) -->
+      <aside id="margin-drawer" class="drawer drawer-right thin-scrollbar" aria-label="Thought Margin Notes" aria-hidden="true">
+        <div class="drawer-header">
+          <div class="drawer-title-row">
+            <h2 class="drawer-heading">Margin Thoughts</h2>
+            <button id="add-thought-note-btn" class="drawer-action-btn" title="Add note to active paragraph (+)">+ Note</button>
+          </div>
+        </div>
+        <div id="margin-scroll-container" class="margin-scroll-container no-scrollbar">
+          <!-- SVG overlay for rendering hairline leader lines -->
+          <svg id="margin-leader-svg" class="margin-leader-svg" aria-hidden="true"></svg>
+          <div id="margin-notes-list" class="margin-notes-list">
+            <!-- Thought notes positioned with top: var(--anchor-top)px -->
+          </div>
+        </div>
+
+        <!-- Dedicated Orphaned Notes Recovery Section -->
+        <div id="orphaned-notes-section" class="orphaned-notes-section" style="display: none;">
+          <div class="orphaned-header">
+            <span class="orphaned-title">Orphaned Notes</span>
+            <span id="orphaned-count-badge" class="orphaned-badge">0</span>
+          </div>
+          <div id="orphaned-notes-list" class="orphaned-notes-list">
+            <!-- Cards whose anchor paragraph was deleted -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- Light-Dismiss Backdrop for Open Drawers -->
+      <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+    </div>
+
+    <!-- Application Bootstrap -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Daylight Writer Fullscreen Immersive Window Theme -->
+    <!-- Pure #FFFFFF (os_0) canvas ground, zero action bar, edge-to-edge cutout -->
+    <style name="Theme.DaylightWriter.Fullscreen" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Window Chrome Elimination -->
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+
+        <!-- Base Canvas Ground: Sol:OS os_0 (#FFFFFF) prevents black launch flash -->
+        <item name="android:windowBackground">@color/sol_os_0</item>
+        <item name="android:colorBackground">@color/sol_os_0</item>
+
+        <!-- Transparent System Bars for Edge-to-Edge Composition -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+
+        <!-- Display Cutout / Bezel Policy: Expand into short edges -->
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="p">shortEdges</item>
+
+        <!-- High-Contrast Sol:OS Typography Defaults -->
+        <item name="android:textColorPrimary">@color/sol_os_900</item>
+        <item name="android:textColorSecondary">@color/sol_os_400</item>
+    </style>
+</resources>
