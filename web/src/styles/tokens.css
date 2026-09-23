@@ -98,4 +98,41 @@
   --transition-drawer: 150ms cubic-bezier(0.16, 1, 0.3, 1);
   --transition-color: 150ms ease-out;
   --transition-fade: 150ms ease-out;
+
+  /* ------------------------------------------------------------------------
+     11. Theme-Specific Variables (Default: Sol:OS)
+     ------------------------------------------------------------------------ */
+  --theme-name: "solos";
+  --card-radius: 6px;
+  --pill-radius: 6px;
+  --card-shadow: none;
+  --header-bg: transparent;
+  --accent-color: var(--os-900);
+  --accent-text: var(--os-0);
+  --date-badge-bg: var(--os-800);
+  --date-badge-text: var(--os-0);
+  --drawer-binder-bg: var(--os-50);
+  --note-card-bg: var(--os-0);
+  --note-card-border: 1px solid var(--color-border-hairline);
 }
+
+/* ==========================================================================
+   Theme: Daylight Sol:OS (Default Calibrated Grayscale)
+   ========================================================================== */
+[data-theme="solos"] {
+  --theme-name: "solos";
+  --color-canvas-bg: var(--os-0);
+  --color-surface-panel: var(--os-50);
+  --color-surface-input: var(--os-150);
+  --card-radius: 6px;
+  --pill-radius: 6px;
+  --card-shadow: none;
+  --accent-color: var(--os-900);
+  --accent-text: var(--os-0);
+  --date-badge-bg: var(--os-800);
+  --date-badge-text: var(--os-0);
+  --drawer-binder-bg: var(--os-50);
+  --note-card-bg: var(--os-0);
+  --note-card-border: 1px solid var(--color-border-hairline);
+}
+

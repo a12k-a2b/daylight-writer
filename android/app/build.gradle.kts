@@ -103,15 +103,16 @@ dependencies {
 // ---------------------------------------------------------------------------
 // Production Web Assets Packaging Pipeline
 // ---------------------------------------------------------------------------
-val webProjectDir = rootProject.file("../daylight_writer")
-val webDistDir = rootProject.file("../daylight_writer/dist")
+val webProjectDir = rootProject.file("../web")
+val webDistDir = rootProject.file("../web/dist")
 val targetAssetsDir = layout.projectDirectory.dir("src/main/assets")
 
 val buildWebAssets = tasks.register<Exec>("buildWebAssets") {
     group = "daylight"
     description = "Compiles Daylight Writer web bundle via npm run build if dist/ is missing"
     workingDir = webProjectDir
-    commandLine("npm", "run", "build")
+    environment("PATH", "${System.getenv("PATH") ?: ""}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin")
+    commandLine(if (System.getProperty("os.name").lowercase().contains("windows")) "npm.cmd" else "npm", "run", "build")
     onlyIf {
         !webDistDir.resolve("index.html").exists()
     }

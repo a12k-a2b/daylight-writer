@@ -1,0 +1,297 @@
+/**
+ * src/styles/themes.css
+ * Daylight Writer - Theme Definitions for Day One (iOS) and Scrivener Studio
+ * 
+ * Provides visual styling for Day One iOS journaling aesthetic and Scrivener desktop
+ * authoring aesthetic while preserving Daylight Sol:OS monochrome ergonomics on DC1.
+ */
+
+/* ==========================================================================
+   Theme Tokens: Day One (iOS Journaling App Aesthetic)
+   ========================================================================== */
+[data-theme="dayone"] {
+  --theme-name: "dayone";
+  --color-canvas-bg: #FFFFFF;
+  --color-surface-panel: #F7F8FA; /* Soft iOS warm off-white surface */
+  --color-surface-input: #EAEBED;
+  --card-radius: 14px;          /* iOS signature rounded cards */
+  --pill-radius: 20px;
+  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  --accent-color: #2468C8;       /* Day One iOS signature blue; renders crisp on DC1 */
+  --accent-text: #FFFFFF;
+  --date-badge-bg: #2468C8;
+  --date-badge-text: #FFFFFF;
+  --date-badge-subtext: rgba(255, 255, 255, 0.85);
+  --drawer-binder-bg: #F7F8FA;
+  --note-card-bg: #FFFFFF;
+  --note-card-border: 1px solid rgba(0, 0, 0, 0.07);
+  --dayone-quote-border: 3.5px solid #2468C8;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+}
+
+/* ==========================================================================
+   Theme Tokens: Scrivener (Classic macOS Desktop Studio)
+   ========================================================================== */
+[data-theme="scrivener"] {
+  --theme-name: "scrivener";
+  --color-canvas-bg: #FAF8F5;   /* Warm manuscript parchment */
+  --color-surface-panel: #EAE6DF; /* Scrivener classic Mac binder */
+  --color-surface-input: #DFDAD1;
+  --card-radius: 4px;           /* Classic Mac structured bevels */
+  --pill-radius: 4px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --accent-color: #4A5568;       /* Classic Mac slate */
+  --accent-text: #FFFFFF;
+  --date-badge-bg: #5A6270;
+  --date-badge-text: #FFFFFF;
+  --drawer-binder-bg: #EAE6DF;
+  --corkboard-bg: #F4F0E8;
+  --note-card-bg: #FFFDF8;
+  --note-card-border: 1.5px dashed #C8C2B8; /* Index card dashed border */
+  --font-body: "Charter", "Georgia", "Baskerville", "Palatino", serif;
+}
+
+/* ==========================================================================
+   Day One (iOS Journaling App Aesthetic) Component Styling
+   ========================================================================== */
+.dayone-date-badge {
+  display: none;
+}
+
+[data-theme="dayone"] .dayone-date-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  min-width: 52px;
+  height: 64px;
+  background-color: var(--date-badge-bg, #2468C8);
+  color: var(--date-badge-text, #FFFFFF);
+  border-radius: 10px;
+  padding: 4px 2px;
+  user-select: none;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.dayone-date-month {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.dayone-date-day {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
+.dayone-date-time {
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.85;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="dayone"] .document-card {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 12px;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+[data-theme="dayone"] .document-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dayone"] .document-card.active-doc {
+  border-color: var(--accent-color, #2468C8);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 1px var(--accent-color, #2468C8), 0 4px 12px rgba(36, 104, 200, 0.12);
+}
+
+[data-theme="dayone"] .doc-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Day One iOS Pill Search Bar */
+[data-theme="dayone"] .search-input {
+  border-radius: 20px;
+  background-color: var(--color-surface-input);
+  border: 1px solid transparent;
+  padding-left: 14px;
+  font-size: 13px;
+}
+
+[data-theme="dayone"] .search-input:focus {
+  background-color: #FFFFFF;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(36, 104, 200, 0.15);
+}
+
+/* Day One iOS Segmented Control */
+[data-theme="dayone"] .sort-segmented-control {
+  border-radius: 18px;
+  background-color: var(--color-surface-input);
+  padding: 3px;
+}
+
+[data-theme="dayone"] .sort-btn {
+  border-radius: 15px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+[data-theme="dayone"] .sort-btn.active {
+  background-color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: var(--os-900);
+  font-weight: 600;
+}
+
+/* Day One iOS Margin Reflection Notes */
+[data-theme="dayone"] .thought-note-card {
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-left: 4px solid var(--accent-color, #2468C8);
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================================================
+   Scrivener (Classic macOS Desktop Studio) Component Styling
+   ========================================================================== */
+[data-theme="scrivener"] .drawer-left {
+  background-color: var(--drawer-binder-bg, #EAE6DF);
+  border-right: 1px solid #D1CCC4;
+}
+
+[data-theme="scrivener"] .drawer-heading {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4A5568;
+  font-family: -apple-system, BlinkMacSystemFont, "Lucida Grande", sans-serif;
+}
+
+/* Scrivener Outline / Binder Rows */
+[data-theme="scrivener"] .outline-row {
+  border-radius: 3px;
+  font-family: -apple-system, BlinkMacSystemFont, "Lucida Grande", sans-serif;
+}
+
+[data-theme="scrivener"] .outline-row.active-doc {
+  background-color: #3875D7;
+  color: #FFFFFF;
+}
+
+[data-theme="scrivener"] .outline-row.active-doc .outline-title,
+[data-theme="scrivener"] .outline-row.active-doc .outline-word-badge {
+  color: #FFFFFF;
+}
+
+/* Scrivener Status Label Stamps */
+.scrivener-status-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  margin-left: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.status-draft { background-color: #E2DFD8; color: #535353; }
+.status-revised { background-color: #D6E8D6; color: #2D5A27; }
+.status-final { background-color: #D3E0EA; color: #1D4668; }
+.status-todo { background-color: #EEDDD4; color: #7A3D22; }
+
+/* Scrivener Right Drawer: Corkboard Index Cards */
+[data-theme="scrivener"] .drawer-right {
+  background-color: #F4F0E8;
+  border-left: 1px solid #D1CCC4;
+}
+
+[data-theme="scrivener"] .thought-note-card {
+  background-color: #FFFDF8;
+  border: 1.5px dashed #C8C2B8;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: 10px;
+  position: relative;
+}
+
+[data-theme="scrivener"] .thought-note-card::before {
+  content: "SYNOPSIS";
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8C867A;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #EAE6DF;
+  padding-bottom: 2px;
+}
+
+/* Scrivener Canvas Separator */
+[data-theme="scrivener"] .scrivenings-divider-glyph {
+  font-family: "Georgia", serif;
+  letter-spacing: 0.25em;
+  font-size: 16px;
+  color: #5A6270;
+}
+
+/* Theme Preview Mini Cards in Settings Modal */
+.preview-dayone {
+  background-color: #F7F8FA;
+}
+.preview-dayone .preview-mini-header {
+  height: 10px;
+  background-color: #2468C8;
+  border-radius: 3px;
+}
+.preview-dayone .preview-mini-card {
+  height: 14px;
+  background-color: #FFFFFF;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2px;
+}
+
+.preview-scrivener {
+  background-color: #EAE6DF;
+}
+.preview-scrivener .preview-mini-header {
+  height: 10px;
+  background-color: #D9D4CC;
+  border-radius: 2px;
+}
+.preview-scrivener .preview-mini-card {
+  height: 14px;
+  background-color: #FFFDF8;
+  border: 1px dashed #C8C2B8;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+

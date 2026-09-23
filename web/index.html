@@ -14,6 +14,21 @@
     <link rel="stylesheet" href="/src/styles/tokens.css" />
     <link rel="stylesheet" href="/src/styles/reset.css" />
     <link rel="stylesheet" href="/src/styles/main.css" />
+    <link rel="stylesheet" href="/src/styles/themes.css" />
+
+    <!-- Early Theme Initialization to prevent flash of unstyled theme -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('daylight_writer_theme');
+          if (saved && (saved === 'solos' || saved === 'dayone' || saved === 'scrivener')) {
+            document.documentElement.setAttribute('data-theme', saved);
+          } else {
+            document.documentElement.setAttribute('data-theme', 'solos');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app" class="dc1-shell">
@@ -80,6 +95,8 @@
           </div>
           <div class="header-right-group">
             <button id="header-notes-btn" class="header-action-btn" title="Toggle Margin Notes (Cmd+])" aria-label="Toggle Margin Notes">✎ Notes</button>
+            <button id="header-theme-btn" class="header-action-btn" title="Cycle Theme: Sol:OS / Day One / Scrivener (Cmd+Alt+T)" aria-label="Cycle Theme">🎨 Theme</button>
+            <button id="header-settings-btn" class="header-action-btn header-settings-btn" title="Settings (Cmd+,)" aria-label="Settings">⚙</button>
             <button id="header-collab-btn" class="header-action-btn" title="Live Collaboration (Cmd+Shift+C)" aria-label="Live Collaboration">Collab</button>
             <button id="header-export-btn" class="header-action-btn" title="Export & Share (Cmd+Shift+E)" aria-label="Export & Share">Export</button>
             <div id="sync-status-pill" class="sync-status-pill sync-state-synced" role="status" aria-live="polite">

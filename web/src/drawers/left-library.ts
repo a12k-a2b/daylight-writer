@@ -873,17 +873,36 @@ export class LeftLibraryDrawer {
     const tags = this.docTagsMap.get(doc.id) || [];
     const tagsHtml = tags.slice(0, 3).map(t => `<span class="doc-tag-chip">#${escapeHtml(t)}</span>`).join('');
 
+    const d = new Date(this.currentSortBy === 'created_at' ? doc.created_at : doc.updated_at);
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const monthStr = months[d.getMonth()] || 'SEP';
+    const dayName = days[d.getDay()] || 'MON';
+    const dayNum = d.getDate();
+    const hours = d.getHours();
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    const timeStr = `${hour12}:${minutes} ${ampm}`;
+
     card.innerHTML = `
-      <div class="doc-card-header">
-        <h3 class="doc-item-title">${escapeHtml(titleText)}</h3>
-        <time class="doc-item-date">${dateText}</time>
+      <div class="dayone-date-badge" aria-hidden="true">
+        <span class="dayone-date-month">${monthStr} · ${dayName}</span>
+        <span class="dayone-date-day">${dayNum}</span>
+        <span class="dayone-date-time">${timeStr}</span>
       </div>
-      <p class="doc-item-snippet">${snippetHtml}</p>
-      <div class="doc-card-footer">
-        <div class="doc-item-tags">${tagsHtml}</div>
-        <div class="doc-card-actions">
-          <button class="doc-action-export-btn" title="Export document" aria-label="Export document">Export</button>
-          <span class="doc-sync-status doc-sync-${doc.sync_status || 'synced'}" title="${doc.sync_status || 'synced'}"></span>
+      <div class="doc-card-body">
+        <div class="doc-card-header">
+          <h3 class="doc-item-title">${escapeHtml(titleText)}</h3>
+          <time class="doc-item-date">${dateText}</time>
+        </div>
+        <p class="doc-item-snippet">${snippetHtml}</p>
+        <div class="doc-card-footer">
+          <div class="doc-item-tags">${tagsHtml}</div>
+          <div class="doc-card-actions">
+            <button class="doc-action-export-btn" title="Export document" aria-label="Export document">Export</button>
+            <span class="doc-sync-status doc-sync-${doc.sync_status || 'synced'}" title="${doc.sync_status || 'synced'}"></span>
+          </div>
         </div>
       </div>
     `;
@@ -1159,6 +1178,13 @@ export class LeftLibraryDrawer {
     wordBadge.className = 'outline-word-badge';
     wordBadge.textContent = `${wordCount.toLocaleString()}w`;
     rowEl.appendChild(wordBadge);
+
+    // 5.5 Scrivener Status Label Chip
+    const statusChip = docOwner.createElement('span');
+    const statusType = isFolder ? 'draft' : 'revised';
+    statusChip.className = `scrivener-status-chip status-${statusType}`;
+    statusChip.textContent = isFolder ? 'DRAFT' : 'REVISED';
+    rowEl.appendChild(statusChip);
 
     // 6. If folder: Concatenate (Scrivenings) button
     if (isFolder) {

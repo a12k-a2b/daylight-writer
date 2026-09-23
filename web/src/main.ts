@@ -34,6 +34,8 @@ import { CollaborationManager } from './editor/tiptap-collaboration.ts';
 import { CollaborationModal } from './ui/collaboration-modal.ts';
 import { GoogleDriveSyncAdapter } from './sync/google-drive-sync-adapter.ts';
 import { GoogleDriveModal } from './ui/google-drive-modal.ts';
+import { ThemeManager } from './ui/theme-manager.ts';
+import { SettingsModal } from './ui/settings-modal.ts';
 
 export class DaylightWriterApp {
   public repository: SQLiteStorageRepository;
@@ -44,6 +46,10 @@ export class DaylightWriterApp {
   public history: HistoryManager | null = null;
   public clock: LiveClockController | null = null;
   public activeDocumentId: string = SEED_DOCUMENT_ID;
+
+  // Theme & Settings
+  public themeManager: ThemeManager | null = null;
+  public settingsModal: SettingsModal | null = null;
 
   // Milestone 3 Components
   public leftDrawer: LeftLibraryDrawer | null = null;
@@ -105,11 +111,13 @@ export class DaylightWriterApp {
       // 3. Attach UI, Editor, and Clock if in browser environment
       if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         (window as any).__daylightWriterApp = this;
+        this.setupThemes();
         this.setupClock();
         this.setupEditor();
         this.setupKeyboardShortcuts();
         this.setupDrawers();
         this.setupCollaboration();
+        this.setupTypewriterChromePolish();
         await this.loadActiveDocument();
         await this.renderDocumentList();
       }
@@ -124,11 +132,13 @@ export class DaylightWriterApp {
       this.exportService = new ExportService(this.shareService);
 
       if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        this.setupThemes();
         this.setupClock();
         this.setupEditor();
         this.setupKeyboardShortcuts();
         this.setupDrawers();
         this.setupCollaboration();
+        this.setupTypewriterChromePolish();
         await this.loadActiveDocument();
         await this.renderDocumentList();
       }
@@ -436,6 +446,25 @@ export class DaylightWriterApp {
         return;
       }
 
+      // Cmd+Alt+T : Cycle Themes Instantly (Sol:OS -> Day One -> Scrivener)
+      if ((e.metaKey || e.ctrlKey) && e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        const nextTheme = this.themeManager?.cycleTheme();
+        const themeBtn = document.getElementById('header-theme-btn');
+        if (themeBtn && nextTheme) {
+          const config = this.themeManager?.getThemeConfig();
+          themeBtn.textContent = `🎨 ${config?.name.split(' ')[0] || 'Theme'}`;
+        }
+        return;
+      }
+
+      // Cmd+, : Open Settings Modal
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault();
+        this.settingsModal?.toggle();
+        return;
+      }
+
       // Cmd+S : Emergency Disk Flush
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
@@ -443,6 +472,91 @@ export class DaylightWriterApp {
         return;
       }
     });
+  }
+
+  public setupThemes(): void {
+    this.themeManager = new ThemeManager();
+    this.themeManager.init();
+
+    this.settingsModal = new SettingsModal({
+      container: document.body,
+      themeManager: this.themeManager,
+      onThemeChanged: () => {
+        const themeBtn = document.getElementById('header-theme-btn');
+        if (themeBtn) {
+          const config = this.themeManager?.getThemeConfig();
+          themeBtn.textContent = `🎨 ${config?.name.split(' ')[0] || 'Theme'}`;
+        }
+      },
+    });
+
+    const themeBtn = document.getElementById('header-theme-btn');
+    if (themeBtn) {
+      const config = this.themeManager.getThemeConfig();
+      themeBtn.textContent = `🎨 ${config.name.split(' ')[0]}`;
+      themeBtn.addEventListener('click', () => {
+        const nextTheme = this.themeManager?.cycleTheme();
+        if (nextTheme) {
+          const nextConfig = this.themeManager?.getThemeConfig();
+          themeBtn.textContent = `🎨 ${nextConfig?.name.split(' ')[0] || 'Theme'}`;
+        }
+      });
+    }
+
+    const settingsBtn = document.getElementById('header-settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        this.settingsModal?.toggle();
+      });
+    }
+  }
+
+  /**
+   * iA Writer Zero-Chrome Polish:
+   * Smoothly fades the top header during typing bursts, giving the author
+   * an immersive, distraction-free typewriter canvas. Re-reveals on mouseover,
+   * pause in typing (2.5s), or Esc.
+   */
+  public setupTypewriterChromePolish(): void {
+    const headerEl = document.querySelector('.editor-header') as HTMLElement | null;
+    const viewportEl = document.getElementById('editor-viewport') as HTMLElement | null;
+    const canvas = document.getElementById('editor-canvas') as HTMLElement | null;
+    if (!headerEl || !viewportEl || !canvas) return;
+
+    let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const triggerTypingFade = () => {
+      headerEl.classList.add('is-typing-faded');
+      if (fadeTimer) clearTimeout(fadeTimer);
+      fadeTimer = setTimeout(() => {
+        headerEl.classList.remove('is-typing-faded');
+      }, 2500);
+    };
+
+    const revealHeader = () => {
+      if (fadeTimer) {
+        clearTimeout(fadeTimer);
+        fadeTimer = null;
+      }
+      headerEl.classList.remove('is-typing-faded');
+    };
+
+    canvas.addEventListener('input', triggerTypingFade);
+    canvas.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        revealHeader();
+      } else if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.length === 1) {
+        triggerTypingFade();
+      }
+    });
+
+    viewportEl.addEventListener('mousemove', (e) => {
+      if (e.clientY <= 65) {
+        revealHeader();
+      }
+    });
+
+    headerEl.addEventListener('mouseenter', revealHeader);
   }
 
   /**
@@ -679,6 +793,7 @@ export class DaylightWriterApp {
     this.networkListener?.stop();
     this.syncIndicator?.destroy();
     this.exportDialog?.destroy();
+    this.settingsModal?.close();
     this.editor?.destroy();
     this.focusMode?.destroy();
     this.leftDrawer?.destroy();

@@ -2529,5 +2529,280 @@ mark.os-search-highlight {
   padding: 6px 0;
 }
 
+/* ==========================================================================
+   iA Writer Zero-Chrome Typewriter Viewport Polish
+   ========================================================================== */
+.editor-header {
+  transition: opacity 280ms cubic-bezier(0.16, 1, 0.3, 1), transform 280ms ease;
+  will-change: opacity, transform;
+}
+
+.editor-header.is-typing-faded {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-6px);
+}
+
+/* Reveal on hover over top zone of viewport only when not actively typing */
+.editor-viewport:hover .editor-header:not(.is-typing-faded),
+.editor-header:hover:not(.is-typing-faded),
+.editor-header.force-visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateY(0);
+}
+
+/* Ultra-clean iA Writer Header Button Typography */
+.header-action-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--os-400);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.header-action-btn:hover {
+  color: var(--os-900);
+  background-color: var(--os-100-alpha);
+}
+
+.header-settings-btn {
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 6px;
+}
+/* ==========================================================================
+   Settings Modal & Theme Picker Grid
+   ========================================================================== */
+.settings-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out;
+}
+
+.settings-modal-overlay.modal-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-card {
+  background-color: var(--os-0);
+  border: 1px solid var(--os-100);
+  border-radius: var(--card-radius, 14px);
+  width: 680px;
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transform: scale(0.97);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-modal-overlay.modal-open .settings-card {
+  transform: scale(1);
+}
+
+.settings-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--os-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.settings-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--os-900);
+  margin-bottom: 4px;
+}
+
+.settings-section-hint {
+  font-size: 12px;
+  color: var(--os-400);
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+.theme-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.theme-card {
+  border: 1.5px solid var(--os-150);
+  border-radius: 10px;
+  padding: 12px;
+  background-color: var(--os-50);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 120ms ease;
+  user-select: none;
+}
+
+.theme-card:hover {
+  border-color: var(--os-300);
+  transform: translateY(-2px);
+}
+
+.theme-card.active {
+  border-color: var(--os-900);
+  background-color: var(--os-0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.theme-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-card-icon {
+  font-size: 18px;
+}
+
+.theme-card-titles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.theme-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--os-900);
+}
+
+.theme-card-subtitle {
+  font-size: 10px;
+  color: var(--os-400);
+}
+
+.theme-radio-circle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--os-300);
+  position: relative;
+}
+
+.theme-radio-circle.checked {
+  border-color: var(--os-900);
+  background-color: var(--os-900);
+}
+
+.theme-radio-circle.checked::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--os-0);
+}
+
+.theme-card-desc {
+  font-size: 11px;
+  color: var(--os-400);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.theme-preview-box {
+  height: 54px;
+  border-radius: 6px;
+  border: 1px solid var(--os-150);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-solos {
+  background-color: #FFFFFF;
+}
+.preview-solos .preview-mini-header {
+  height: 10px;
+  background-color: #F7F7F7;
+  border-radius: 2px;
+}
+.preview-solos .preview-mini-card {
+  height: 14px;
+  background-color: #F5F5F5;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+}
+
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--os-100-alpha);
+}
+
+.shortcut-label {
+  font-size: 12px;
+  color: var(--os-400);
+}
+
+.shortcut-key {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  background-color: var(--os-150);
+  border: 1px solid var(--os-200);
+  border-radius: 4px;
+  color: var(--os-900);
+}
+
+.settings-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--os-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-status-note {
+  font-size: 11px;
+  color: var(--os-300);
+}
+
+
 
 
