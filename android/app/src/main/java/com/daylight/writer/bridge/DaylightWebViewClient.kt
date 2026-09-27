@@ -1,6 +1,9 @@
 package com.daylight.writer.bridge
 
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
 import android.util.Log
@@ -22,16 +25,75 @@ import androidx.webkit.WebViewAssetLoader
  * 2. Safely handles SSL errors for the virtual domain appassets.androidplatform.net.
  * 3. Catches and logs main-frame and subresource errors without disrupting editor operation.
  * 4. Implements render process crash recovery (onRenderProcessGone).
+ * 5. Intercepts external Google Docs/Drive/OAuth URLs to launch in system browser or native Docs app.
  */
 class DaylightWebViewClient(
     private val assetLoader: WebViewAssetLoader,
     private val onPageReadyListener: (() -> Unit)? = null,
-    private val onRendererCrashListener: (() -> Unit)? = null
+    private val onRendererCrashListener: (() -> Unit)? = null,
+    private val externalUrlHandler: ((Context, String) -> Boolean)? = null
 ) : WebViewClient() {
 
     companion object {
         private const val TAG = "DaylightWebViewClient"
         private const val ASSET_DOMAIN = "appassets.androidplatform.net"
+
+        /**
+         * Returns true if the URL points to external Google Docs, Drive, or OAuth sign-in.
+         * Validates authority hostname to prevent false interception of internal asset query parameters
+         * or hostile domains.
+         */
+        fun isGoogleDocsOrDriveUrl(url: String): Boolean {
+            val host = try {
+                Uri.parse(url).host?.lowercase()
+            } catch (_: Exception) {
+                null
+            } ?: try {
+                java.net.URI(url).host?.lowercase()
+            } catch (_: Exception) {
+                null
+            }
+
+            return host == "docs.google.com" ||
+                host == "drive.google.com" ||
+                host == "accounts.google.com" ||
+                (host?.endsWith(".google.com") == true && host != ASSET_DOMAIN)
+        }
+    }
+
+    override fun shouldOverrideUrlLoading(
+        view: WebView?,
+        request: WebResourceRequest?
+    ): Boolean {
+        val url = request?.url?.toString() ?: return false
+        return handleExternalUrl(view, url)
+    }
+
+    @Deprecated("Deprecated in Java", ReplaceWith("shouldOverrideUrlLoading(view, request)"))
+    override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+        if (url == null) return false
+        return handleExternalUrl(view, url)
+    }
+
+    private fun handleExternalUrl(view: WebView?, url: String): Boolean {
+        if (isGoogleDocsOrDriveUrl(url)) {
+            val context = view?.context ?: return false
+            if (externalUrlHandler != null) {
+                return externalUrlHandler.invoke(context, url)
+            }
+            return try {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                Log.i(TAG, "Intercepted external URL and launched system Intent: $url")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed launching external Intent for URL: $url", e)
+                true
+            }
+        }
+        return false
     }
 
     override fun shouldInterceptRequest(

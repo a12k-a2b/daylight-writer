@@ -216,3 +216,110 @@ test('Repository: automatically reloads caches when database is restored', async
   await db.close();
 });
 
+test('Repository: updateSyncMetadata explicitly clears google_drive_file_id in SQLite and cache when null is passed', async () => {
+  const db = await SqliteDatabase.open({ vfsPreference: 'memory', dbName: 'test_sync_meta_reset.db' });
+  await runMigrations(db);
+
+  const repo = new SQLiteStorageRepository(db, 250);
+  await repo.init();
+
+  // 1. Create document with valid sync metadata
+  await repo.saveDocument({
+    id: 'doc-sync-meta-1',
+    title: 'Sync Meta Document',
+    content: 'Initial text',
+    sync_status: 'synced',
+    google_drive_file_id: 'gdoc-initial-file-id-123',
+    google_drive_revision_id: 'rev-1',
+    last_synced_at: 1700000000000,
+  });
+  await repo.flushPendingEdits();
+
+  // Verify initial state on disk
+  const initialDbRows = await db.executeSql<any>(
+    `SELECT google_drive_file_id, google_drive_revision_id, last_synced_at, sync_status 
+     FROM documents WHERE id = 'doc-sync-meta-1';`
+  );
+  assert.strictEqual(initialDbRows[0].google_drive_file_id, 'gdoc-initial-file-id-123');
+  assert.strictEqual(initialDbRows[0].sync_status, 'synced');
+
+  // 2. Clear sync metadata via updateSyncMetadata with explicit nulls
+  await repo.updateSyncMetadata('doc-sync-meta-1', {
+    google_drive_file_id: null,
+    google_drive_revision_id: null,
+    last_synced_at: null,
+    sync_status: 'pending',
+  });
+
+  // Verify in-memory cache reflects null
+  const memDoc = await repo.getDocument('doc-sync-meta-1');
+  assert.strictEqual(memDoc?.google_drive_file_id, null);
+  assert.strictEqual(memDoc?.google_drive_revision_id, null);
+  assert.strictEqual(memDoc?.last_synced_at, null);
+  assert.strictEqual(memDoc?.sync_status, 'pending');
+
+  // Verify SQLite database reflects NULL (COALESCE bug resolved)
+  const clearedDbRows = await db.executeSql<any>(
+    `SELECT google_drive_file_id, google_drive_revision_id, last_synced_at, sync_status 
+     FROM documents WHERE id = 'doc-sync-meta-1';`
+  );
+  assert.strictEqual(clearedDbRows[0].google_drive_file_id, null, 'SQLite google_drive_file_id must be NULL on disk');
+  assert.strictEqual(clearedDbRows[0].google_drive_revision_id, null, 'SQLite google_drive_revision_id must be NULL on disk');
+  assert.strictEqual(clearedDbRows[0].last_synced_at, null, 'SQLite last_synced_at must be NULL on disk');
+  assert.strictEqual(clearedDbRows[0].sync_status, 'pending');
+
+  // Verify findByDriveFileId no longer finds the document
+  const found = await repo.findByDriveFileId('gdoc-initial-file-id-123');
+  assert.strictEqual(found, null, 'findByDriveFileId must return null for unlinked file ID');
+
+  repo.destroy();
+  await db.close();
+});
+
+test('Repository: saveDocument deterministically clears google_drive_file_id without resurrection', async () => {
+  const db = await SqliteDatabase.open({ vfsPreference: 'memory', dbName: 'test_save_resurrect.db' });
+  await runMigrations(db);
+
+  const repo = new SQLiteStorageRepository(db, 250);
+  await repo.init();
+
+  // 1. Initial document with active file ID
+  await repo.saveDocument({
+    id: 'doc-resurrect-1',
+    title: 'Resurrect Test',
+    content: 'Initial text',
+    google_drive_file_id: 'gdoc-stale-id',
+  });
+  await repo.flushPendingEdits();
+
+  // 2. Update with explicit null file ID
+  const updated = await repo.saveDocument({
+    id: 'doc-resurrect-1',
+    google_drive_file_id: null,
+    sync_status: 'pending',
+  });
+
+  // Verify no resurrection in returned record or cache
+  assert.strictEqual(updated.google_drive_file_id, null, 'saveDocument must not resurrect stale file ID');
+  const cached = await repo.getDocument('doc-resurrect-1');
+  assert.strictEqual(cached?.google_drive_file_id, null);
+
+  // 3. Flush and verify SQLite
+  await repo.flushPendingEdits();
+  const dbRows = await db.executeSql<any>(
+    `SELECT google_drive_file_id FROM documents WHERE id = 'doc-resurrect-1';`
+  );
+  assert.strictEqual(dbRows[0].google_drive_file_id, null, 'SQLite must contain NULL after flush');
+
+  // 4. Subsequent edit omitting file ID preserves null (does not resurrect)
+  const subsequent = await repo.saveDocument({
+    id: 'doc-resurrect-1',
+    content: 'Typed more text',
+  });
+  assert.strictEqual(subsequent.google_drive_file_id, null);
+
+  repo.destroy();
+  await db.close();
+});
+
+

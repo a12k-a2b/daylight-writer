@@ -8,6 +8,7 @@ import assert from 'node:assert';
 import { Window } from 'happy-dom';
 import { LeftLibraryDrawer, sanitizeSnippetHtml } from '../../src/drawers/left-library.ts';
 import { InMemoryStorageRepository } from '../e2e/helpers/mock-adapters.ts';
+import type { DocumentRecord } from '../../src/storage/schema.ts';
 
 test('LeftLibraryDrawer: Layout initialization, open/close/toggle and zero-chrome class', async () => {
   const win = new Window();
@@ -549,6 +550,257 @@ test('LeftLibraryDrawer: displays search query with angle brackets cleanly in em
   await drawer.executeSearch('apples < oranges');
   const emptyMsgEl = container.querySelector('.library-empty-state .empty-message');
   assert.strictEqual(emptyMsgEl?.textContent, 'No matches for "apples < oranges"');
+
+  drawer.destroy();
+});
+
+class GDocsAwareStorageRepository extends InMemoryStorageRepository {
+  override async saveDocument(doc: Partial<DocumentRecord> & { id: string }): Promise<DocumentRecord> {
+    const saved = await super.saveDocument(doc);
+    if ('google_drive_file_id' in doc) {
+      saved.google_drive_file_id = doc.google_drive_file_id ?? null;
+      const pending = (this as any).pendingEdits.get(doc.id);
+      if (pending) {
+        pending.google_drive_file_id = doc.google_drive_file_id ?? null;
+      }
+      const existing = (this as any).documents.get(doc.id);
+      if (existing) {
+        existing.google_drive_file_id = doc.google_drive_file_id ?? null;
+      }
+    }
+    return saved;
+  }
+}
+
+test('LeftLibraryDrawer: Synced document renders .doc-gdocs-badge and a.doc-gdocs-link with valid edit URL', async () => {
+  const win = new Window();
+  const doc = win.document;
+  const shell = doc.createElement('div');
+  const container = doc.createElement('aside');
+  shell.appendChild(container);
+
+  const repo = new GDocsAwareStorageRepository();
+  await repo.init();
+
+  const fileId = 'gdoc-test-file-987';
+  await repo.saveDocument({
+    id: 'doc-synced',
+    title: 'Synced Cloud Manuscript',
+    content: 'Content synced with Google Docs.',
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    google_drive_file_id: fileId,
+  });
+
+  const drawer = new LeftLibraryDrawer({
+    container: container as unknown as HTMLElement,
+    shellElement: shell as unknown as HTMLElement,
+    repository: repo,
+    onSelectDocument: () => {},
+  });
+
+  await drawer.init();
+
+  const card = container.querySelector('.document-card[data-id="doc-synced"]') as HTMLElement | null;
+  assert.ok(card, 'Card must be rendered');
+
+  // 1. Badge verification
+  const badgeEl = card.querySelector('.doc-gdocs-badge');
+  assert.ok(badgeEl, 'Must render .doc-gdocs-badge for synced document');
+  assert.strictEqual(badgeEl.getAttribute('data-file-id'), fileId, 'Badge must store data-file-id');
+  assert.ok(badgeEl.textContent?.includes('Google Docs'), 'Badge text must include Google Docs');
+
+  // 2. Link verification
+  const linkEl = card.querySelector('a.doc-gdocs-link') as HTMLAnchorElement | null;
+  assert.ok(linkEl, 'Must render a.doc-gdocs-link');
+  assert.strictEqual(linkEl.getAttribute('href'), `https://docs.google.com/document/d/${fileId}/edit`, 'Must link directly to Google Docs edit endpoint');
+  assert.strictEqual(linkEl.getAttribute('target'), '_blank', 'Must target new tab/window');
+  assert.strictEqual(linkEl.getAttribute('rel'), 'noopener noreferrer', 'Must set secure rel attributes');
+  assert.strictEqual(linkEl.getAttribute('data-file-id'), fileId, 'Link must also carry data-file-id');
+
+  drawer.destroy();
+});
+
+test('LeftLibraryDrawer: Local document omits .doc-gdocs-badge and .doc-gdocs-link', async () => {
+  const win = new Window();
+  const doc = win.document;
+  const shell = doc.createElement('div');
+  const container = doc.createElement('aside');
+  shell.appendChild(container);
+
+  const repo = new InMemoryStorageRepository();
+  await repo.init();
+
+  await repo.saveDocument({
+    id: 'doc-local-only',
+    title: 'Offline Draft Manuscript',
+    content: 'Local text only.',
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    google_drive_file_id: null,
+  });
+
+  const drawer = new LeftLibraryDrawer({
+    container: container as unknown as HTMLElement,
+    shellElement: shell as unknown as HTMLElement,
+    repository: repo,
+    onSelectDocument: () => {},
+  });
+
+  await drawer.init();
+
+  const card = container.querySelector('.document-card[data-id="doc-local-only"]') as HTMLElement | null;
+  assert.ok(card, 'Card must be rendered');
+
+  const badgeEl = card.querySelector('.doc-gdocs-badge');
+  assert.strictEqual(badgeEl, null, 'Must omit .doc-gdocs-badge when google_drive_file_id is null');
+
+  const linkEl = card.querySelector('.doc-gdocs-link');
+  assert.strictEqual(linkEl, null, 'Must omit .doc-gdocs-link when google_drive_file_id is null');
+
+  drawer.destroy();
+});
+
+test('LeftLibraryDrawer: Google Docs badge click stops propagation and does not select card or dismiss drawer', async () => {
+  const win = new Window();
+  const doc = win.document;
+  const shell = doc.createElement('div');
+  shell.className = 'dc1-shell left-open';
+  const container = doc.createElement('aside');
+  container.className = 'drawer drawer-left';
+  shell.appendChild(container);
+
+  const repo = new GDocsAwareStorageRepository();
+  await repo.init();
+
+  await repo.saveDocument({
+    id: 'doc-click-test',
+    title: 'Click Intercept Doc',
+    content: 'Testing click propagation stop.',
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    google_drive_file_id: 'gdoc-click-123',
+  });
+
+  let selectedId: string | null = null;
+  const drawer = new LeftLibraryDrawer({
+    container: container as unknown as HTMLElement,
+    shellElement: shell as unknown as HTMLElement,
+    repository: repo,
+    onSelectDocument: (id) => {
+      selectedId = id;
+    },
+  });
+
+  await drawer.init();
+  drawer.open();
+  assert.strictEqual(drawer.getIsOpen(), true);
+
+  const linkEl = container.querySelector('a.doc-gdocs-link') as HTMLElement | null;
+  assert.ok(linkEl, 'Link element must exist');
+
+  // Click on the Google Docs link (prevent happy-dom navigation fetch hang)
+  linkEl.addEventListener('click', (e) => e.preventDefault());
+  linkEl.click();
+
+  // Document should NOT be selected, and drawer should REMAIN open
+  assert.strictEqual(selectedId, null, 'Document must not be selected by badge click');
+  assert.strictEqual(drawer.getIsOpen(), true, 'Drawer must not close on badge click');
+
+  drawer.destroy();
+});
+
+test('LeftLibraryDrawer: Invokes DaylightBridgeClient.openExternalUrl when present', async () => {
+  const win = new Window();
+  const doc = win.document;
+  const shell = doc.createElement('div');
+  const container = doc.createElement('aside');
+  shell.appendChild(container);
+
+  let openedUrl: string | null = null;
+  (win as any).DaylightBridgeClient = {
+    openExternalUrl: (url: string) => {
+      openedUrl = url;
+    },
+  };
+
+  const repo = new GDocsAwareStorageRepository();
+  await repo.init();
+
+  const fileId = 'gdoc-bridge-test';
+  await repo.saveDocument({
+    id: 'doc-bridge-test',
+    title: 'Bridge Dispatch Doc',
+    content: 'Testing bridge external url dispatch.',
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    google_drive_file_id: fileId,
+  });
+
+  const drawer = new LeftLibraryDrawer({
+    container: container as unknown as HTMLElement,
+    shellElement: shell as unknown as HTMLElement,
+    repository: repo,
+    onSelectDocument: () => {},
+  });
+
+  await drawer.init();
+
+  const linkEl = container.querySelector('a.doc-gdocs-link') as HTMLElement | null;
+  assert.ok(linkEl, 'Link element must exist');
+
+  linkEl.click();
+
+  assert.strictEqual(
+    openedUrl,
+    `https://docs.google.com/document/d/${fileId}/edit`,
+    'Must dispatch target edit URL to DaylightBridgeClient.openExternalUrl'
+  );
+
+  delete (win as any).DaylightBridgeClient;
+  drawer.destroy();
+});
+
+test('LeftLibraryDrawer: Search results preserve .doc-gdocs-badge for matching documents', async () => {
+  const win = new Window();
+  const doc = win.document;
+  const shell = doc.createElement('div');
+  const container = doc.createElement('aside');
+  shell.appendChild(container);
+
+  const repo = new GDocsAwareStorageRepository();
+  await repo.init();
+
+  await repo.saveDocument({
+    id: 'doc-cloud-search',
+    title: 'Atmospheric Physics',
+    content: 'Stratospheric ozone depletion and ultraviolet dynamics.',
+    created_at: Date.now(),
+    updated_at: Date.now(),
+    google_drive_file_id: 'gdoc-physics-42',
+  });
+
+  const drawer = new LeftLibraryDrawer({
+    container: container as unknown as HTMLElement,
+    shellElement: shell as unknown as HTMLElement,
+    repository: repo,
+    onSelectDocument: () => {},
+  });
+
+  await drawer.init();
+
+  await drawer.executeSearch('ozone');
+
+  const card = container.querySelector('.document-card[data-id="doc-cloud-search"]') as HTMLElement | null;
+  assert.ok(card, 'Search hit card must exist');
+
+  const badgeEl = card.querySelector('.doc-gdocs-badge');
+  assert.ok(badgeEl, 'Search hit must render .doc-gdocs-badge');
+  assert.strictEqual(badgeEl.getAttribute('data-file-id'), 'gdoc-physics-42');
+
+  const linkEl = card.querySelector('a.doc-gdocs-link') as HTMLAnchorElement | null;
+  assert.ok(linkEl, 'Search hit must render a.doc-gdocs-link');
+  assert.strictEqual(linkEl.getAttribute('href'), 'https://docs.google.com/document/d/gdoc-physics-42/edit');
 
   drawer.destroy();
 });

@@ -21,6 +21,8 @@ export class GoogleDriveModal {
   private overlay: HTMLElement | null = null;
   private isOpen: boolean = false;
   private onSyncTriggered?: () => Promise<void>;
+  private boundKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  private verifyTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: GoogleDriveModalOptions) {
     this.container = options.container || document.body;
@@ -30,12 +32,21 @@ export class GoogleDriveModal {
 
   public open(): void {
     if (this.isOpen) return;
-    this.render();
     this.isOpen = true;
+    this.render();
   }
 
   public close(): void {
+    if (this.verifyTimeout) {
+      clearTimeout(this.verifyTimeout);
+      this.verifyTimeout = null;
+    }
     if (!this.isOpen || !this.overlay) return;
+    const doc = this.container.ownerDocument || (typeof document !== 'undefined' ? document : null);
+    if (this.boundKeydownHandler && doc) {
+      doc.removeEventListener('keydown', this.boundKeydownHandler);
+      this.boundKeydownHandler = null;
+    }
     this.overlay.remove();
     this.overlay = null;
     this.isOpen = false;
@@ -50,7 +61,15 @@ export class GoogleDriveModal {
   }
 
   private render(): void {
+    if (!this.isOpen) return;
     const doc = this.container.ownerDocument || document;
+
+    // Clean up any existing overlay to prevent DOM node leaks upon re-render
+    if (this.overlay) {
+      this.overlay.remove();
+      this.overlay = null;
+    }
+
     this.overlay = doc.createElement('div');
     this.overlay.className = 'export-modal-backdrop gdrive-modal-backdrop';
 
@@ -63,6 +82,7 @@ export class GoogleDriveModal {
     const currentUser = this.adapter.getCurrentUser();
     const isAuth = this.adapter.isAuthenticated();
     const userEmail = currentUser?.email || (isAuth ? 'a12katta@gmail.com' : 'Not Connected');
+    const avatarInitial = escapeHtml((userEmail && userEmail.length > 0 ? userEmail[0] : 'D').toUpperCase());
     const logs = this.adapter.syncLogs.slice(0, 5);
 
     modal.innerHTML = `
@@ -78,9 +98,10 @@ export class GoogleDriveModal {
         <!-- Account Status Section -->
         <div class="gdrive-account-card">
           <div class="gdrive-account-info">
-            <div class="gdrive-avatar">${userEmail[0].toUpperCase()}</div>
+            <div class="gdrive-avatar">${avatarInitial}</div>
             <div class="gdrive-details">
-              <span class="gdrive-user-email">${userEmail}</span>
+              <span class="gdrive-user-email">${escapeHtml(userEmail)}</span>
+              ${currentUser?.name ? `<span class="gdrive-user-name">${escapeHtml(currentUser.name)}</span>` : ''}
               <span class="gdrive-status-badge ${isAuth ? 'connected' : 'disconnected'}">
                 ${isAuth ? '● Connected & Ready' : '○ Local Offline Mode'}
               </span>
@@ -97,7 +118,7 @@ export class GoogleDriveModal {
           <div class="collab-room-row">
             <input type="password" class="collab-input" id="gdrive-token-input" 
                    placeholder="Paste Google OAuth token (ya29...)" 
-                   value="${this.adapter.getAccessToken() || ''}" />
+                   value="${escapeHtml(this.adapter.getAccessToken() || '')}" />
             <button class="btn-export-secondary" id="gdrive-save-token-btn">Verify Token</button>
           </div>
           <span class="collab-hint">To test with a12katta@gmail.com, paste a token from Google OAuth Playground or click Connect.</span>
@@ -122,9 +143,9 @@ export class GoogleDriveModal {
                 ? logs
                     .map(
                       (l) =>
-                        `<div class="gdrive-log-line log-${l.type}">
+                        `<div class="gdrive-log-line log-${escapeHtml(l.type)}">
                           <span class="log-time">[${new Date(l.timestamp).toLocaleTimeString()}]</span>
-                          <span class="log-msg">${l.message}</span>
+                          <span class="log-msg">${escapeHtml(l.message)}</span>
                         </div>`
                     )
                     .join('')
@@ -155,20 +176,35 @@ export class GoogleDriveModal {
       if (e.target === this.overlay) this.close();
     });
 
-    // Token save button
+    // Token save button & Enter key
     const saveTokenBtn = modal.querySelector('#gdrive-save-token-btn') as HTMLElement;
     const tokenInput = modal.querySelector('#gdrive-token-input') as HTMLInputElement;
+
+    tokenInput?.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveTokenBtn?.click();
+      }
+    });
+
     saveTokenBtn?.addEventListener('click', async () => {
       const val = tokenInput.value.trim();
       if (val) {
         this.adapter.setAccessToken(val);
         saveTokenBtn.textContent = 'Verifying...';
         try {
-          const user = await this.adapter.verifyAuthentication();
+          await this.adapter.verifyAuthentication();
           saveTokenBtn.textContent = 'Verified ✓';
           this.refreshLog();
-          setTimeout(() => this.render(), 400);
-        } catch (err: any) {
+          if (this.verifyTimeout) {
+            clearTimeout(this.verifyTimeout);
+            this.verifyTimeout = null;
+          }
+          this.verifyTimeout = setTimeout(() => {
+            this.verifyTimeout = null;
+            this.render();
+          }, 400);
+        } catch {
           saveTokenBtn.textContent = 'Failed';
           this.refreshLog();
         }
@@ -183,9 +219,11 @@ export class GoogleDriveModal {
     authBtn?.addEventListener('click', () => {
       if (this.adapter.isAuthenticated()) {
         this.adapter.setAccessToken(null);
+        if (typeof (this.adapter as any).clearTokens === 'function') {
+          (this.adapter as any).clearTokens();
+        }
         this.render();
       } else {
-        // Quick demo token or real prompt
         tokenInput.focus();
       }
     });
@@ -207,7 +245,7 @@ export class GoogleDriveModal {
           syncBtn.textContent = 'Sync to Drive Now';
           syncBtn.disabled = false;
         }, 1500);
-      } catch (err: any) {
+      } catch {
         syncBtn.textContent = 'Sync Failed';
         this.refreshLog();
         setTimeout(() => {
@@ -217,28 +255,42 @@ export class GoogleDriveModal {
       }
     });
 
-    // Keydown Esc to close
-    const handleKeydown = (e: KeyboardEvent) => {
+    // Keydown Esc listener scoped to container's ownerDocument
+    if (this.boundKeydownHandler && doc) {
+      doc.removeEventListener('keydown', this.boundKeydownHandler);
+    }
+    this.boundKeydownHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         this.close();
-        document.removeEventListener('keydown', handleKeydown);
       }
     };
-    document.addEventListener('keydown', handleKeydown);
+    doc.addEventListener('keydown', this.boundKeydownHandler);
   }
 
   private refreshLog(): void {
     const logBox = this.overlay?.querySelector('#gdrive-log-box');
     if (!logBox) return;
     const logs = this.adapter.syncLogs.slice(0, 5);
-    logBox.innerHTML = logs
-      .map(
-        (l) =>
-          `<div class="gdrive-log-line log-${l.type}">
-            <span class="log-time">[${new Date(l.timestamp).toLocaleTimeString()}]</span>
-            <span class="log-msg">${l.message}</span>
-          </div>`
-      )
-      .join('');
+    logBox.innerHTML =
+      logs.length > 0
+        ? logs
+            .map(
+              (l) =>
+                `<div class="gdrive-log-line log-${escapeHtml(l.type)}">
+                  <span class="log-time">[${new Date(l.timestamp).toLocaleTimeString()}]</span>
+                  <span class="log-msg">${escapeHtml(l.message)}</span>
+                </div>`
+            )
+            .join('')
+        : '<div class="gdrive-log-empty">No recent sync actions. Click "Sync to Drive Now" to upload active draft.</div>';
   }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

@@ -885,6 +885,10 @@ export class LeftLibraryDrawer {
     const hour12 = hours % 12 || 12;
     const timeStr = `${hour12}:${minutes} ${ampm}`;
 
+    const gdocsBadgeHtml = doc.google_drive_file_id
+      ? `<span class="doc-gdocs-badge" data-file-id="${escapeHtml(doc.google_drive_file_id)}"><a class="doc-gdocs-link" href="https://docs.google.com/document/d/${escapeHtml(doc.google_drive_file_id)}/edit" target="_blank" rel="noopener noreferrer" data-file-id="${escapeHtml(doc.google_drive_file_id)}" title="Open in Google Docs" aria-label="Open in Google Docs">Google Docs</a></span>`
+      : '';
+
     card.innerHTML = `
       <div class="dayone-date-badge" aria-hidden="true">
         <span class="dayone-date-month">${monthStr} · ${dayName}</span>
@@ -900,12 +904,42 @@ export class LeftLibraryDrawer {
         <div class="doc-card-footer">
           <div class="doc-item-tags">${tagsHtml}</div>
           <div class="doc-card-actions">
+            ${gdocsBadgeHtml}
             <button class="doc-action-export-btn" title="Export document" aria-label="Export document">Export</button>
             <span class="doc-sync-status doc-sync-${doc.sync_status || 'synced'}" title="${doc.sync_status || 'synced'}"></span>
           </div>
         </div>
       </div>
     `;
+
+    // Google Docs badge & link click handler
+    const gdocsLink = card.querySelector('.doc-gdocs-link');
+    if (gdocsLink) {
+      gdocsLink.addEventListener('click', (e: Event) => {
+        e.stopPropagation();
+        const winAny =
+          (card.ownerDocument as any)?.defaultView ||
+          (typeof window !== 'undefined' ? (window as any) : null);
+        if (winAny?.DaylightBridgeClient?.openExternalUrl) {
+          e.preventDefault();
+          const targetUrl = (gdocsLink as HTMLAnchorElement).href;
+          winAny.DaylightBridgeClient.openExternalUrl(targetUrl);
+        }
+      });
+      gdocsLink.addEventListener('keydown', (e: Event) => {
+        const ke = e as KeyboardEvent;
+        if (ke.key === 'Enter' || ke.key === ' ') {
+          e.stopPropagation();
+        }
+      });
+    }
+
+    const gdocsBadge = card.querySelector('.doc-gdocs-badge');
+    if (gdocsBadge && gdocsBadge !== gdocsLink) {
+      gdocsBadge.addEventListener('click', (e: Event) => {
+        e.stopPropagation();
+      });
+    }
 
     // Export button handler
     const exportBtn = card.querySelector('.doc-action-export-btn');

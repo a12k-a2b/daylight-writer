@@ -60,6 +60,19 @@ export interface StorageRepository {
   setDocumentTags(documentId: string, tags: string[]): Promise<void>;
   getDocumentTags(documentId: string): Promise<string[]>;
 
+  // Google Drive & Cloud Sync extensions
+  findByDriveFileId?(fileId: string): Promise<DocumentRecord | null>;
+  updateSyncMetadata?(
+    id: string,
+    metadata: {
+      google_drive_file_id?: string | null;
+      google_drive_revision_id?: string | null;
+      last_synced_at?: number | null;
+      sync_status?: DocumentRecord['sync_status'];
+    }
+  ): Promise<void>;
+  getDatabaseDriver?(): DatabaseDriver | null;
+
   // Scrivener Outline & Playlist Reordering (Steven Johnson Workflow)
   getOutlineTree?(): Promise<OutlineTreeNode[]>;
   reorderDocument?(docId: string, newParentId: string | null, targetIndex: number): Promise<void>;
@@ -302,7 +315,9 @@ export class SQLiteStorageRepository implements StorageRepository {
     if (!this.db) return null;
 
     const rows = await this.db.executeSql<any>(
-      `SELECT id, title, content, created_at, updated_at, deleted_at, is_title_custom, format_version, sync_status, google_drive_file_id, google_drive_revision_id, last_synced_at, version_vector
+      `SELECT id, title, content, created_at, updated_at, deleted_at, is_title_custom,
+              format_version, sync_status, google_drive_file_id, google_drive_revision_id,
+              last_synced_at, version_vector, parent_id, sort_order, synopsis, item_type
        FROM documents WHERE id = ? AND deleted_at IS NULL LIMIT 1;`,
       [id]
     );
@@ -312,6 +327,82 @@ export class SQLiteStorageRepository implements StorageRepository {
     const record = this.rowToDocumentRecord(rows[0]);
     this.documentsCache.set(record.id, record);
     return { ...record };
+  }
+
+  public async findByDriveFileId(fileId: string): Promise<DocumentRecord | null> {
+    if (!fileId || typeof fileId !== 'string' || fileId.trim() === '') return null;
+
+    for (const doc of this.documentsCache.values()) {
+      if (doc.google_drive_file_id === fileId && doc.deleted_at === null) {
+        return { ...doc };
+      }
+    }
+
+    if (!this.db) return null;
+
+    const rows = await this.db.executeSql<any>(
+      `SELECT id, title, content, created_at, updated_at, deleted_at, is_title_custom,
+              format_version, sync_status, google_drive_file_id, google_drive_revision_id,
+              last_synced_at, version_vector, parent_id, sort_order, synopsis, item_type
+       FROM documents WHERE google_drive_file_id = ? AND deleted_at IS NULL LIMIT 1;`,
+      [fileId]
+    );
+
+    if (rows.length === 0) return null;
+
+    const record = this.rowToDocumentRecord(rows[0]);
+    this.documentsCache.set(record.id, record);
+    return { ...record };
+  }
+
+  public async updateSyncMetadata(
+    id: string,
+    metadata: {
+      google_drive_file_id?: string | null;
+      google_drive_revision_id?: string | null;
+      last_synced_at?: number | null;
+      sync_status?: DocumentRecord['sync_status'];
+    }
+  ): Promise<void> {
+    const cached = this.documentsCache.get(id);
+    if (cached) {
+      if (metadata.google_drive_file_id !== undefined) cached.google_drive_file_id = metadata.google_drive_file_id;
+      if (metadata.google_drive_revision_id !== undefined) cached.google_drive_revision_id = metadata.google_drive_revision_id;
+      if (metadata.last_synced_at !== undefined) cached.last_synced_at = metadata.last_synced_at;
+      if (metadata.sync_status !== undefined) cached.sync_status = metadata.sync_status;
+    }
+
+    if (this.db) {
+      const setClauses: string[] = [];
+      const params: any[] = [];
+
+      if (metadata.google_drive_file_id !== undefined) {
+        setClauses.push('google_drive_file_id = ?');
+        params.push(metadata.google_drive_file_id);
+      }
+      if (metadata.google_drive_revision_id !== undefined) {
+        setClauses.push('google_drive_revision_id = ?');
+        params.push(metadata.google_drive_revision_id);
+      }
+      if (metadata.last_synced_at !== undefined) {
+        setClauses.push('last_synced_at = ?');
+        params.push(metadata.last_synced_at);
+      }
+      if (metadata.sync_status !== undefined) {
+        setClauses.push('sync_status = ?');
+        params.push(metadata.sync_status);
+      }
+
+      if (setClauses.length > 0) {
+        params.push(id);
+        await this.db.executeSql(
+          `UPDATE documents 
+           SET ${setClauses.join(', ')} 
+           WHERE id = ?;`,
+          params
+        );
+      }
+    }
   }
 
   public async listDocuments(options?: {
@@ -421,10 +512,19 @@ export class SQLiteStorageRepository implements StorageRepository {
           ? doc.is_title_custom
           : (existing?.is_title_custom ?? false),
       format_version: doc.format_version ?? existing?.format_version ?? 1,
-      sync_status: doc.sync_status ?? existing?.sync_status ?? 'pending',
-      google_drive_file_id: doc.google_drive_file_id ?? existing?.google_drive_file_id ?? null,
-      google_drive_revision_id: doc.google_drive_revision_id ?? existing?.google_drive_revision_id ?? null,
-      last_synced_at: doc.last_synced_at ?? existing?.last_synced_at ?? null,
+      sync_status: doc.sync_status !== undefined ? doc.sync_status : (existing?.sync_status ?? 'pending'),
+      google_drive_file_id:
+        doc.google_drive_file_id !== undefined
+          ? doc.google_drive_file_id
+          : (existing?.google_drive_file_id ?? null),
+      google_drive_revision_id:
+        doc.google_drive_revision_id !== undefined
+          ? doc.google_drive_revision_id
+          : (existing?.google_drive_revision_id ?? null),
+      last_synced_at:
+        doc.last_synced_at !== undefined
+          ? doc.last_synced_at
+          : (existing?.last_synced_at ?? null),
       version_vector: nextRev,
       parent_id: doc.parent_id !== undefined ? doc.parent_id : (existing?.parent_id ?? null),
       sort_order: doc.sort_order !== undefined ? doc.sort_order : (existing?.sort_order ?? 0),
@@ -812,21 +912,23 @@ export class SQLiteStorageRepository implements StorageRepository {
         ],
       });
 
-      // Add mutation to sync_queue for offline sync engine
-      operations.push({
-        sql: `INSERT INTO sync_queue (
-          id, entity_type, entity_id, operation, payload, client_timestamp, retry_count, last_error, status
-        ) VALUES (?, ?, ?, ?, ?, ?, 0, NULL, ?);`,
-        params: [
-          'sync_' + Math.random().toString(36).substring(2, 11),
-          'document',
-          doc.id,
-          doc.deleted_at ? 'delete' : 'update',
-          JSON.stringify(doc),
-          doc.updated_at,
-          'pending',
-        ],
-      });
+      // Add mutation to sync_queue for offline sync engine (only if not already synced)
+      if (doc.sync_status !== 'synced') {
+        operations.push({
+          sql: `INSERT INTO sync_queue (
+            id, entity_type, entity_id, operation, payload, client_timestamp, retry_count, last_error, status
+          ) VALUES (?, ?, ?, ?, ?, ?, 0, NULL, ?);`,
+          params: [
+            'sync_' + Math.random().toString(36).substring(2, 11),
+            'document',
+            doc.id,
+            doc.deleted_at ? 'delete' : 'update',
+            JSON.stringify(doc),
+            doc.updated_at,
+            'pending',
+          ],
+        });
+      }
     }
 
     // 2. Process Margin Notes via UPSERT

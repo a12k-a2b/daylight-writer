@@ -22,7 +22,7 @@ import { InlineContinuationEngine } from './ai/inline-continuation.ts';
 import { CommandPalette } from './ai/command-palette.ts';
 import { CritiqueEngine } from './ai/critique-engine.ts';
 import { ContextAssistant } from './ai/context-assistant.ts';
-import type { SyncAdapter } from './sync/sync-adapter.ts';
+import type { SyncAdapter, SyncOperation } from './sync/sync-adapter.ts';
 import { MockGoogleDocsSyncAdapter } from './sync/mock-google-docs-sync-adapter.ts';
 import { OfflineMutationQueue } from './sync/offline-mutation-queue.ts';
 import { NetworkListener } from './sync/network-listener.ts';
@@ -82,7 +82,12 @@ export class DaylightWriterApp {
   public googleDriveModal: GoogleDriveModal | null = null;
 
   private currentDoc: DocumentRecord | null = null;
-  private saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Dual-Debounce Timers: Local 250ms SQLite persistence vs Cloud 1500ms Google Drive sync
+  public flushTimer: ReturnType<typeof setTimeout> | null = null;
+  public saveDebounceTimer: ReturnType<typeof setTimeout> | null = null; // Maintained for Android Kotlin bridge compatibility
+  public cloudSyncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   private currentSortBy: 'updated_at' | 'created_at' = 'updated_at';
 
   constructor() {
@@ -100,10 +105,17 @@ export class DaylightWriterApp {
       this.repository.setDatabaseDriver(this.db);
       await this.repository.init();
 
-      // 2.5 Initialize M5 Pluggable Sync & Export
+      // 2.5 Initialize M5 Pluggable Sync & Export with Canonical Google Drive Adapter
       this.syncQueue = new OfflineMutationQueue(this.db);
-      this.syncAdapter = new MockGoogleDocsSyncAdapter();
-      await this.syncAdapter.init();
+      await this.syncQueue.init();
+
+      this.googleDriveAdapter = new GoogleDriveSyncAdapter({
+        db: this.db,
+        repository: this.repository,
+        mutationQueue: this.syncQueue,
+      });
+      await this.googleDriveAdapter.init();
+      this.syncAdapter = this.googleDriveAdapter;
 
       this.shareService = new ShareService();
       this.exportService = new ExportService(this.shareService);
@@ -114,27 +126,43 @@ export class DaylightWriterApp {
         this.setupThemes();
         this.setupClock();
         this.setupEditor();
+        this.setupDaylightBridgeClient();
         this.setupKeyboardShortcuts();
         this.setupDrawers();
         this.setupCollaboration();
         this.setupTypewriterChromePolish();
         await this.loadActiveDocument();
         await this.renderDocumentList();
+
+        // Initial background remote discovery if authenticated and online
+        if (this.googleDriveAdapter.isAuthenticated() && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
+          void this.googleDriveAdapter.pull().catch((err) => {
+            console.warn('[DaylightWriter] Initial remote document discovery deferred:', err);
+          });
+        }
       }
     } catch (err) {
       console.warn('[DaylightWriter] Bootstrapping with in-memory fallback:', err);
       await this.repository.init();
       this.syncQueue = new OfflineMutationQueue();
-      this.syncAdapter = new MockGoogleDocsSyncAdapter();
-      await this.syncAdapter.init();
+      await this.syncQueue.init();
+
+      this.googleDriveAdapter = new GoogleDriveSyncAdapter({
+        repository: this.repository,
+        mutationQueue: this.syncQueue,
+      });
+      await this.googleDriveAdapter.init();
+      this.syncAdapter = this.googleDriveAdapter;
 
       this.shareService = new ShareService();
       this.exportService = new ExportService(this.shareService);
 
       if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        (window as any).__daylightWriterApp = this;
         this.setupThemes();
         this.setupClock();
         this.setupEditor();
+        this.setupDaylightBridgeClient();
         this.setupKeyboardShortcuts();
         this.setupDrawers();
         this.setupCollaboration();
@@ -293,23 +321,39 @@ export class DaylightWriterApp {
     });
 
     // 6. Initialize Sync Indicator, Google Drive Modal & Network Listener (Milestone 5)
-    this.googleDriveAdapter = new GoogleDriveSyncAdapter();
-    void this.googleDriveAdapter.init();
+    if (!this.googleDriveAdapter) {
+      this.googleDriveAdapter = new GoogleDriveSyncAdapter({
+        db: this.db || undefined,
+        repository: this.repository,
+        mutationQueue: this.syncQueue || undefined,
+      });
+      void this.googleDriveAdapter.init();
+      this.syncAdapter = this.googleDriveAdapter;
+    }
 
     this.googleDriveModal = new GoogleDriveModal({
       container: document.body,
       adapter: this.googleDriveAdapter,
       onSyncTriggered: async () => {
+        // Preempt any active debouncers upon manual force-sync trigger
+        this.cancelDebounceTimers();
+
         if (!this.currentDoc) return;
-        this.googleDriveAdapter?.queueMutation(this.currentDoc.id, 'update', { ...this.currentDoc });
+        const op: SyncOperation = this.currentDoc.google_drive_file_id ? 'update' : 'create';
+        this.googleDriveAdapter?.queueMutation(this.currentDoc.id, op, { ...this.currentDoc });
         await this.googleDriveAdapter?.sync();
+
         if (this.currentDoc) {
-          this.currentDoc.sync_status = 'synced';
-          this.currentDoc.last_synced_at = Date.now();
-          await this.repository.saveDocument(this.currentDoc);
+          const reloaded = await this.repository.getDocument(this.currentDoc.id);
+          if (reloaded) {
+            this.currentDoc = reloaded;
+          }
         }
         if (this.googleDriveAdapter && this.syncIndicator) {
           this.syncIndicator.update(this.googleDriveAdapter.getStatus());
+        }
+        if (this.leftDrawer) {
+          await this.leftDrawer.refresh();
         }
       },
     });
@@ -317,20 +361,23 @@ export class DaylightWriterApp {
     const syncPillContainer = document.getElementById('sync-status-pill');
     if (syncPillContainer) {
       this.syncIndicator = new SyncStatusIndicator(syncPillContainer, {
-        onRetry: async () => {
+        format: 'solos',
+        showTimestamp: true,
+        onRetry: () => {
           this.googleDriveModal?.open();
         },
+        onRetryClick: () => {
+          this.googleDriveModal?.open();
+        },
+        onClick: () => {
+          this.googleDriveModal?.toggle();
+        },
       });
-      this.syncIndicator.bindSyncAdapter(this.googleDriveAdapter || this.syncAdapter!);
-      syncPillContainer.addEventListener('click', () => {
-        this.googleDriveModal?.toggle();
-      });
+      this.syncIndicator.bindSyncAdapter(this.googleDriveAdapter);
     }
 
-    if (this.syncAdapter) {
-      this.networkListener = new NetworkListener(this.syncAdapter, this.syncQueue || undefined);
-      this.networkListener.start();
-    }
+    this.networkListener = new NetworkListener(this.googleDriveAdapter, this.syncQueue || undefined);
+    this.networkListener.start();
 
     // 7. Initialize Export Dialog & Header Export Button (Milestone 5)
     if (this.exportService && this.repository) {
@@ -349,6 +396,48 @@ export class DaylightWriterApp {
   }
 
   public async loadActiveDocument(docId: string = this.activeDocumentId): Promise<void> {
+    if (this.currentDoc && (this.flushTimer || this.cloudSyncDebounceTimer)) {
+      this.cancelDebounceTimers();
+      if (this.editor && typeof this.editor.getContent === 'function') {
+        this.currentDoc.content = this.editor.getContent();
+        if (this.autoTitle) {
+          this.currentDoc.title = this.autoTitle.getTitle();
+          this.currentDoc.is_title_custom = this.autoTitle.getIsCustom();
+        }
+      }
+      await this.repository.saveDocument(this.currentDoc);
+      if (this.syncQueue) {
+        await this.syncQueue.enqueue('document', this.currentDoc.id, 'update', { ...this.currentDoc });
+      }
+      if (this.googleDriveAdapter) {
+        const op: SyncOperation = this.currentDoc.google_drive_file_id ? 'update' : 'create';
+        this.googleDriveAdapter.queueMutation(this.currentDoc.id, op, { ...this.currentDoc });
+      }
+      if (typeof this.repository.flushPendingEdits === 'function') {
+        await this.repository.flushPendingEdits();
+      }
+      if (
+        typeof (window as any).DaylightBridge !== 'undefined' &&
+        typeof (window as any).DaylightBridge.onSyncQueueUpdated === 'function'
+      ) {
+        try {
+          const pendingCount = this.syncQueue
+            ? await this.syncQueue.getPendingCount()
+            : this.googleDriveAdapter
+            ? this.googleDriveAdapter.getStatus().pendingCount
+            : 0;
+          (window as any).DaylightBridge.onSyncQueueUpdated(pendingCount);
+        } catch (bridgeErr) {
+          console.warn('[DaylightBridge] onSyncQueueUpdated notification failed:', bridgeErr);
+        }
+      }
+      if (this.syncIndicator && this.googleDriveAdapter) {
+        this.syncIndicator.update(this.googleDriveAdapter.getStatus());
+      }
+    } else {
+      this.cancelDebounceTimers();
+    }
+
     this.activeDocumentId = docId;
     let doc = await this.repository.getDocument(docId);
     if (!doc) {
@@ -393,23 +482,251 @@ export class DaylightWriterApp {
     }
   }
 
+  /**
+   * Dual-Debounce Persistence Pipeline:
+   * 1. 250ms fast debounce (`flushTimer`): Immediately persists typing bursts locally into wa-sqlite.
+   * 2. 1500ms cloud debounce (`cloudSyncDebounceTimer`): Automatically pushes document mutations to Google Drive
+   *    after the author pauses typing for 1.5 seconds.
+   */
   private queueSaveDocument(): void {
     if (!this.currentDoc) return;
-    if (this.saveDebounceTimer) {
-      clearTimeout(this.saveDebounceTimer);
+
+    // 1. Fast Local SQLite Debounce (250ms)
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
     }
-    this.saveDebounceTimer = setTimeout(async () => {
+    this.flushTimer = setTimeout(async () => {
       if (this.currentDoc) {
         await this.repository.saveDocument(this.currentDoc);
-        if (this.syncQueue && !this.db) {
-          await this.syncQueue.enqueue('document', this.currentDoc.id, 'update', this.currentDoc);
-        }
-        if (this.syncQueue && this.syncAdapter && (typeof navigator === 'undefined' || navigator.onLine !== false)) {
-          void this.syncQueue.drain(this.syncAdapter);
+        if (this.syncQueue) {
+          await this.syncQueue.enqueue('document', this.currentDoc.id, 'update', { ...this.currentDoc });
         }
       }
+      this.flushTimer = null;
       this.saveDebounceTimer = null;
     }, 250);
+    this.saveDebounceTimer = this.flushTimer;
+
+    // 2. Background Cloud Sync Debounce (1500ms / 1.5s per Feature 5 & R1)
+    if (this.cloudSyncDebounceTimer) {
+      clearTimeout(this.cloudSyncDebounceTimer);
+    }
+    this.cloudSyncDebounceTimer = setTimeout(async () => {
+      await this.triggerCloudSyncForActiveDocument();
+      this.cloudSyncDebounceTimer = null;
+    }, 1500);
+  }
+
+  /**
+   * Cancels active local and cloud debounce timers to prevent redundant triggers.
+   */
+  public cancelDebounceTimers(): void {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+      this.saveDebounceTimer = null;
+    }
+    if (this.cloudSyncDebounceTimer) {
+      clearTimeout(this.cloudSyncDebounceTimer);
+      this.cloudSyncDebounceTimer = null;
+    }
+  }
+
+  /**
+   * Pushes active document mutation to Google Drive and executes synchronization.
+   */
+  public async triggerCloudSyncForActiveDocument(): Promise<void> {
+    if (!this.currentDoc || !this.googleDriveAdapter) return;
+
+    // Ensure local database snapshot is committed before pushing
+    await this.repository.saveDocument(this.currentDoc);
+
+    const operation: SyncOperation = this.currentDoc.google_drive_file_id ? 'update' : 'create';
+    this.googleDriveAdapter.queueMutation(this.currentDoc.id, operation, { ...this.currentDoc });
+
+    // Notify Android native bridge WorkManager of updated pending mutation count
+    if (
+      typeof (window as any).DaylightBridge !== 'undefined' &&
+      typeof (window as any).DaylightBridge.onSyncQueueUpdated === 'function'
+    ) {
+      try {
+        (window as any).DaylightBridge.onSyncQueueUpdated(this.googleDriveAdapter.getStatus().pendingCount);
+      } catch (bridgeErr) {
+        console.warn('[DaylightBridge] onSyncQueueUpdated notification failed:', bridgeErr);
+      }
+    }
+
+    if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+      try {
+        await this.googleDriveAdapter.sync();
+        if (this.currentDoc) {
+          const reloaded = await this.repository.getDocument(this.currentDoc.id);
+          if (reloaded) {
+            this.currentDoc = reloaded;
+          }
+        }
+      } catch (err) {
+        console.warn('[DaylightWriter] Debounced cloud sync failed:', err);
+      }
+    }
+
+    if (this.syncIndicator) {
+      this.syncIndicator.update(this.googleDriveAdapter.getStatus());
+    }
+
+    if (this.leftDrawer) {
+      void this.leftDrawer.refresh();
+    }
+  }
+
+  /**
+   * Registers reverse dispatcher hooks for Android native wrapper (`window.DaylightBridgeClient`).
+   * Provides emergency SQLite WAL flush, WorkManager background sync, and URL redirection.
+   */
+  public setupDaylightBridgeClient(): void {
+    if (typeof window === 'undefined') return;
+
+    const existingClient = (window as any).DaylightBridgeClient || {};
+
+    (window as any).DaylightBridgeClient = {
+      ...existingClient,
+
+      /**
+       * Emergency SQLite WAL flush and immediate cloud debounce execution.
+       * Invoked by Android Folio Hall Sensor (/dev/input/event3 SW_LID),
+       * Activity onPause(), or Cmd+S emergency save point.
+       */
+      flushPendingEdits: async (): Promise<void> => {
+        try {
+          this.cancelDebounceTimers();
+
+          if (this.editor && this.currentDoc && typeof this.editor.getContent === 'function') {
+            const content = this.editor.getContent();
+            this.currentDoc.content = content;
+            if (this.autoTitle) {
+              this.currentDoc.title = this.autoTitle.getTitle();
+              this.currentDoc.is_title_custom = this.autoTitle.getIsCustom();
+            }
+          }
+
+          if (this.currentDoc) {
+            await this.repository.saveDocument(this.currentDoc);
+          }
+          if (typeof this.repository.flushPendingEdits === 'function') {
+            await this.repository.flushPendingEdits();
+          }
+
+          if (this.currentDoc && this.googleDriveAdapter) {
+            const op: SyncOperation = this.currentDoc.google_drive_file_id ? 'update' : 'create';
+            this.googleDriveAdapter.queueMutation(this.currentDoc.id, op, { ...this.currentDoc });
+            if (this.syncQueue) {
+              await this.syncQueue.enqueue('document', this.currentDoc.id, 'update', { ...this.currentDoc });
+            }
+
+            if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+              try {
+                await this.googleDriveAdapter.sync();
+              } catch (cloudErr) {
+                console.warn('[DaylightBridgeClient] Cloud sync during emergency flush skipped:', cloudErr);
+              }
+            }
+          }
+
+          if (
+            typeof (window as any).DaylightBridge !== 'undefined' &&
+            typeof (window as any).DaylightBridge.onFlushCompleted === 'function'
+          ) {
+            (window as any).DaylightBridge.onFlushCompleted(true, 0);
+          }
+        } catch (err) {
+          console.error('[DaylightBridgeClient] flushPendingEdits failed:', err);
+          if (
+            typeof (window as any).DaylightBridge !== 'undefined' &&
+            typeof (window as any).DaylightBridge.onFlushCompleted === 'function'
+          ) {
+            (window as any).DaylightBridge.onFlushCompleted(false, 0);
+          }
+        }
+      },
+
+      /**
+       * Background sync triggered by Android WorkManager (DaylightSyncWorker)
+       * when network connectivity is established.
+       */
+      triggerBackgroundSync: async (): Promise<{ pushed: number; pulled: number }> => {
+        let pushed = 0;
+        let pulled = 0;
+
+        try {
+          if (this.googleDriveAdapter) {
+            if (this.syncQueue) {
+              const queueResult = await this.syncQueue.drain(this.googleDriveAdapter);
+              pushed += queueResult.pushedCount;
+            }
+
+            const syncResult = await this.googleDriveAdapter.sync();
+            pushed += syncResult.pushedCount;
+
+            if (this.googleDriveAdapter.isAuthenticated()) {
+              try {
+                const pullResult = await this.googleDriveAdapter.pull();
+                pulled += pullResult.pulledCount;
+              } catch (pullErr) {
+                console.warn('[DaylightBridgeClient] Background pull skipped:', pullErr);
+              }
+            }
+
+            if (pulled > 0 && this.currentDoc) {
+              const reloaded = await this.repository.getDocument(this.currentDoc.id);
+              if (reloaded) {
+                this.currentDoc = reloaded;
+                if (this.editor) {
+                  this.editor.setContent(reloaded.content);
+                }
+              }
+              if (this.leftDrawer) {
+                await this.leftDrawer.refresh();
+              }
+            }
+
+            if (this.syncIndicator) {
+              this.syncIndicator.update(this.googleDriveAdapter.getStatus());
+            }
+          }
+        } catch (err) {
+          console.error('[DaylightBridgeClient] triggerBackgroundSync failed:', err);
+        }
+
+        return { pushed, pulled };
+      },
+
+      /**
+       * Direct alias for immediate synchronization requests.
+       */
+      requestImmediateSync: (): boolean => {
+        void (window as any).DaylightBridgeClient.triggerBackgroundSync();
+        return true;
+      },
+
+      /**
+       * Opens external URL (e.g. Google Docs document edit link) in system browser.
+       */
+      openExternalUrl: (url: string): boolean => {
+        if (typeof window !== 'undefined') {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          return true;
+        }
+        return false;
+      },
+    };
+
+    // Listen for custom native events dispatched by WebView or Android bridge
+    const handleImmediateSyncEvent = async () => {
+      await (window as any).DaylightBridgeClient.triggerBackgroundSync();
+    };
+
+    window.addEventListener('daylight:requestImmediateSync', handleImmediateSyncEvent);
+    window.addEventListener('requestImmediateSync', handleImmediateSyncEvent);
   }
 
   public setupKeyboardShortcuts(): void {
@@ -458,10 +775,14 @@ export class DaylightWriterApp {
         return;
       }
 
-      // Cmd+, : Open Settings Modal
+      // Cmd+, / Ctrl+, : Toggle Google Drive & Docs Sync Configuration Dialog (Feature 17 & R4)
       if ((e.metaKey || e.ctrlKey) && e.key === ',') {
         e.preventDefault();
-        this.settingsModal?.toggle();
+        if (this.googleDriveModal) {
+          this.googleDriveModal.toggle();
+        } else if (this.settingsModal) {
+          this.settingsModal.toggle();
+        }
         return;
       }
 
@@ -786,12 +1107,11 @@ export class DaylightWriterApp {
       this.clock.stop();
       this.clock = null;
     }
-    if (this.saveDebounceTimer) {
-      clearTimeout(this.saveDebounceTimer);
-      this.saveDebounceTimer = null;
-    }
+    this.cancelDebounceTimers();
     this.networkListener?.stop();
     this.syncIndicator?.destroy();
+    this.googleDriveModal?.close();
+    (this.googleDriveAdapter as any)?.destroy?.();
     this.exportDialog?.destroy();
     this.settingsModal?.close();
     this.editor?.destroy();

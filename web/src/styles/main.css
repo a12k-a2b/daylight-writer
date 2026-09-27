@@ -1740,7 +1740,17 @@ mark.os-search-highlight {
   transition: background-color var(--transition-color, 150ms ease-out),
               color var(--transition-color, 150ms ease-out),
               border-color var(--transition-color, 150ms ease-out);
-  cursor: default;
+  cursor: pointer;
+}
+
+.sync-status-pill:hover {
+  background-color: var(--os-50);
+  border-color: var(--os-200);
+}
+
+.sync-status-pill:focus-visible {
+  outline: 2px solid var(--os-900);
+  outline-offset: 2px;
 }
 
 /* State: Synced / Idle */
@@ -1752,7 +1762,7 @@ mark.os-search-highlight {
 }
 .sync-status-pill.sync-state-synced .sync-status-glyph,
 .sync-status-pill.sync-state-idle .sync-status-glyph {
-  color: var(--os-300);
+  color: var(--os-400);
   font-size: 10px;
 }
 
@@ -1780,7 +1790,7 @@ mark.os-search-highlight {
   color: var(--os-400);
 }
 .sync-status-pill.sync-state-offline .sync-status-glyph {
-  color: var(--os-300);
+  color: var(--os-400);
 }
 
 /* State: Error */
@@ -1837,6 +1847,67 @@ mark.os-search-highlight {
 .doc-action-export-btn:hover {
   color: var(--os-900);
   border-color: var(--os-800);
+}
+
+/* Google Docs Badge & Direct Link in Document Cards (Sol:OS Pure Compliance) */
+.doc-gdocs-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.doc-gdocs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background-color: var(--os-100);
+  border: 1px solid var(--os-200);
+  border-radius: 4px;
+  color: var(--os-900);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color var(--transition-color), border-color var(--transition-color), color var(--transition-color);
+}
+
+.doc-gdocs-link:hover,
+.doc-gdocs-link:focus-visible {
+  background-color: var(--os-150);
+  border-color: var(--os-800);
+  color: var(--os-1000);
+  outline: none;
+}
+
+.doc-gdocs-link:active {
+  background-color: var(--os-800);
+  border-color: var(--os-900);
+  color: var(--os-0);
+}
+
+.doc-gdocs-link::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 11px;
+  background-color: var(--os-800);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'/%3E%3C/svg%3E") no-repeat center / contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'/%3E%3C/svg%3E") no-repeat center / contain;
+  flex-shrink: 0;
+}
+
+.doc-gdocs-link:hover::before {
+  background-color: var(--os-1000);
+}
+
+.doc-gdocs-link:active::before {
+  background-color: var(--os-0);
 }
 
 /* ==========================================================================
@@ -2380,7 +2451,7 @@ mark.os-search-highlight {
 
 .collab-hint {
   font-size: 11px;
-  color: var(--os-300);
+  color: var(--os-400);
   margin-top: 4px;
   display: block;
 }
@@ -2416,6 +2487,64 @@ mark.os-search-highlight {
 .gdrive-modal {
   width: 540px;
   max-width: calc(100vw - 32px);
+}
+
+.gdrive-modal .export-modal-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--os-100);
+}
+
+.gdrive-modal .export-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--os-1000);
+  margin: 0;
+}
+
+.gdrive-modal .export-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--os-400);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.gdrive-modal .export-modal-close:hover {
+  color: var(--os-1000);
+  background-color: var(--os-100);
+}
+
+.gdrive-modal .export-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: var(--os-50);
+}
+
+.gdrive-modal .collab-hint {
+  color: var(--os-400);
+}
+
+.gdrive-modal .export-modal-footer {
+  padding: 12px 20px;
+  background-color: var(--os-0);
+  border-top: 1px solid var(--os-100);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.gdrive-user-name {
+  font-size: 11px;
+  color: var(--os-400);
+  font-weight: 500;
 }
 
 .gdrive-account-card {
@@ -2469,7 +2598,7 @@ mark.os-search-highlight {
 }
 
 .gdrive-status-badge.disconnected {
-  color: var(--os-300);
+  color: var(--os-400);
 }
 
 .gdrive-folder-pill {
@@ -2495,7 +2624,7 @@ mark.os-search-highlight {
 .gdrive-folder-path {
   margin-left: auto;
   font-size: 11px;
-  color: var(--os-300);
+  color: var(--os-400);
 }
 
 .gdrive-log-box {
@@ -2524,7 +2653,7 @@ mark.os-search-highlight {
 .gdrive-log-line.log-error { color: var(--os-1000); font-weight: 700; }
 
 .gdrive-log-empty {
-  color: var(--os-300);
+  color: var(--os-400);
   font-style: italic;
   padding: 6px 0;
 }
