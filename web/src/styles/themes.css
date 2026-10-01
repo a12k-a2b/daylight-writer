@@ -262,16 +262,323 @@
   color: #5A6270;
 }
 
-/* Theme Preview Mini Cards in Settings Modal */
-.preview-dayone {
-  background-color: #F7F8FA;
+/* ==========================================================================
+   Theme Tokens: Night Paper (Chalkboard & Warm Amber Glow)
+   ========================================================================== */
+[data-theme="night"] {
+  --theme-name: "night";
+  --color-canvas-bg: #000000;
+  --color-surface-panel: #121212;
+  --color-surface-input: #292929;
+  --color-surface-hover: #1F1F1F;
+  --color-surface-active: #EBEBEB;
+  --color-surface-active-text: #000000;
+  --color-border-hairline: #3D3D3D;
+  --color-border-focus: #E2A93B;
+  --color-border-leader: #3D3D3D;
+  --color-text-primary: #EBEBEB;
+  --color-text-emphasis: #FFFFFF;
+  --color-text-secondary: #B8B8B8;
+  --color-text-tertiary: #8F8F8F;
+  --color-text-disabled: #555555;
+  --color-text-inverted: #000000;
+  --color-focus-sentence-active: #FFFFFF;
+  --color-focus-sentence-sibling: #888888;
+  --color-focus-paragraph-dimmed: #555555;
+  --color-focus-deep-dimmed: #333333;
+  --accent-color: #E2A93B;
+  --accent-text: #000000;
+  --date-badge-bg: #1F1F1F;
+  --date-badge-text: #E2A93B;
+  --date-badge-subtext: rgba(226, 169, 59, 0.75);
+  --card-radius: 12px;
+  --pill-radius: 100px;
+  --card-shadow: 0 0 0 1px #3D3D3D;
+  --drawer-binder-bg: #121212;
+  --corkboard-bg: #000000;
+  --note-card-bg: #1F1F1F;
+  --note-card-border: 1px solid #3D3D3D;
+  --font-body: "iA Writer Mono", "JetBrains Mono", "SF Mono", monospace;
+  caret-color: #E2A93B;
 }
-.preview-dayone .preview-mini-header {
+
+[data-theme="night"] .dc1-shell {
+  background-color: #000000;
+  color: #EBEBEB;
+}
+
+[data-theme="night"] .main-header {
+  background-color: #121212;
+  border-bottom: 1px solid #3D3D3D;
+}
+
+[data-theme="night"] .drawer-left {
+  background-color: #121212;
+  border-right: 1px solid #3D3D3D;
+}
+
+[data-theme="night"] .drawer-right {
+  background-color: #121212;
+  border-left: 1px solid #3D3D3D;
+}
+
+[data-theme="night"] .document-card {
+  background-color: #1F1F1F;
+  border: 1px solid #3D3D3D;
+  color: #EBEBEB;
+  box-shadow: none;
+}
+
+[data-theme="night"] .document-card:hover {
+  background-color: #262626;
+  border-color: #4D4D4D;
+}
+
+[data-theme="night"] .document-card.active-doc {
+  background-color: #1F1F1F;
+  border-color: #E2A93B;
+  box-shadow: 0 0 0 1px #E2A93B;
+}
+
+[data-theme="night"] .thought-note-card {
+  background-color: #1F1F1F;
+  border: 1px solid #3D3D3D;
+  border-left: 4px solid #E2A93B;
+  color: #EBEBEB;
+}
+
+[data-theme="night"] .search-input {
+  background-color: #292929;
+  border: 1px solid #3D3D3D;
+  color: #EBEBEB;
+}
+
+[data-theme="night"] .search-input:focus {
+  border-color: #E2A93B;
+  box-shadow: 0 0 0 2px rgba(226, 169, 59, 0.25);
+}
+
+[data-theme="night"] .sync-status-pill {
+  background-color: #1F1F1F;
+  border: 1px solid #3D3D3D;
+  color: #EBEBEB;
+}
+
+[data-theme="night"] .sync-status-pill:hover {
+  border-color: #E2A93B;
+}
+
+[data-theme="night"] .sync-pill-dot {
+  background-color: #E2A93B;
+  box-shadow: 0 0 8px rgba(226, 169, 59, 0.65);
+}
+
+[data-theme="night"] .modal-card {
+  background-color: #121212;
+  border: 1px solid #3D3D3D;
+  color: #EBEBEB;
+  box-shadow: 0 0 0 1px #3D3D3D, 0 24px 64px rgba(0, 0, 0, 0.85);
+}
+
+[data-theme="night"] .modal-header,
+[data-theme="night"] .modal-footer {
+  border-color: #3D3D3D;
+}
+
+[data-theme="night"] ::selection {
+  background-color: rgba(226, 169, 59, 0.3);
+  color: #FFFFFF;
+}
+
+/* ==========================================================================
+   Theme Tokens: Sunlight High Contrast (Outdoor Stark 2px Black)
+   ========================================================================== */
+[data-theme="hc"] {
+  --theme-name: "hc";
+  --color-canvas-bg: #FFFFFF;
+  --color-surface-panel: #FFFFFF;
+  --color-surface-input: #FFFFFF;
+  --color-surface-hover: rgba(0, 0, 0, 0.08);
+  --color-surface-active: #000000;
+  --color-surface-active-text: #FFFFFF;
+  --color-border-hairline: #000000;
+  --color-border-focus: #000000;
+  --color-border-leader: #000000;
+  --color-text-primary: #000000;
+  --color-text-emphasis: #000000;
+  --color-text-secondary: #000000;
+  --color-text-tertiary: #333333;
+  --color-text-disabled: #666666;
+  --color-text-inverted: #FFFFFF;
+  --color-focus-sentence-active: #000000;
+  --color-focus-sentence-sibling: #333333;
+  --color-focus-paragraph-dimmed: #595959;
+  --color-focus-deep-dimmed: #767676;
+  --accent-color: #000000;
+  --accent-text: #FFFFFF;
+  --date-badge-bg: #000000;
+  --date-badge-text: #FFFFFF;
+  --date-badge-subtext: #E0E0E0;
+  --card-radius: 2px;
+  --pill-radius: 2px;
+  --card-shadow: 0 0 0 1.5px #000000;
+  --drawer-binder-bg: #FFFFFF;
+  --corkboard-bg: #FFFFFF;
+  --note-card-bg: #FFFFFF;
+  --note-card-border: 2px solid #000000;
+  --font-body: "iA Writer Mono", "JetBrains Mono", monospace;
+  caret-color: #000000;
+}
+
+[data-theme="hc"] .drawer-left {
+  border-right: 2px solid #000000;
+  background-color: #FFFFFF;
+}
+
+[data-theme="hc"] .drawer-right {
+  border-left: 2px solid #000000;
+  background-color: #FFFFFF;
+}
+
+[data-theme="hc"] .main-header {
+  border-bottom: 2px solid #000000;
+  background-color: #FFFFFF;
+}
+
+[data-theme="hc"] .document-card {
+  border: 1.5px solid #000000;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+[data-theme="hc"] .document-card.active-doc {
+  border: 2.5px solid #000000;
+  box-shadow: none;
+}
+
+[data-theme="hc"] .thought-note-card {
+  border: 2px solid #000000;
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+[data-theme="hc"] .search-input {
+  border: 1.5px solid #000000;
+  border-radius: 2px;
+}
+
+[data-theme="hc"] .modal-card {
+  border: 2px solid #000000;
+  box-shadow: 0 0 0 2px #000000;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Aliases for Journal and Manuscript
+   ========================================================================== */
+[data-theme="journal"] {
+  --theme-name: "dayone";
+  --color-canvas-bg: #FFFFFF;
+  --color-surface-panel: #F7F8FA;
+  --color-surface-input: #EAEBED;
+  --card-radius: 14px;
+  --pill-radius: 20px;
+  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  --accent-color: #2468C8;
+  --accent-text: #FFFFFF;
+  --date-badge-bg: #2468C8;
+  --date-badge-text: #FFFFFF;
+  --date-badge-subtext: rgba(255, 255, 255, 0.85);
+  --drawer-binder-bg: #F7F8FA;
+  --note-card-bg: #FFFFFF;
+  --note-card-border: 1px solid rgba(0, 0, 0, 0.07);
+  --dayone-quote-border: 3.5px solid #2468C8;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+}
+
+[data-theme="manuscript"] {
+  --theme-name: "scrivener";
+  --color-canvas-bg: #FAF8F5;
+  --color-surface-panel: #EAE6DF;
+  --color-surface-input: #DFDAD1;
+  --card-radius: 4px;
+  --pill-radius: 4px;
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --accent-color: #4A5568;
+  --accent-text: #FFFFFF;
+  --date-badge-bg: #5A6270;
+  --date-badge-text: #FFFFFF;
+  --drawer-binder-bg: #EAE6DF;
+  --corkboard-bg: #F4F0E8;
+  --note-card-bg: #FFFDF8;
+  --note-card-border: 1.5px dashed #C8C2B8;
+  --font-body: "Charter", "Georgia", "Baskerville", "Palatino", serif;
+}
+
+/* ==========================================================================
+   Theme Preview Mini Cards in Settings Modal
+   ========================================================================== */
+.preview-solos {
+  background-color: #FFFFFF;
+  border: 1px solid #DCD5C9;
+}
+.preview-solos .preview-mini-header {
+  height: 10px;
+  background-color: #F7F7F7;
+  border-radius: 2px;
+  border-bottom: 1px solid #DCD5C9;
+}
+.preview-solos .preview-mini-card {
+  height: 14px;
+  background-color: #FFFFFF;
+  border: 1px solid #DCD5C9;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.preview-night {
+  background-color: #000000;
+  border: 1px solid #3D3D3D;
+}
+.preview-night .preview-mini-header {
+  height: 10px;
+  background-color: #121212;
+  border-radius: 2px;
+  border-bottom: 1px solid #3D3D3D;
+  position: relative;
+}
+.preview-night .preview-mini-header::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #E2A93B;
+  box-shadow: 0 0 4px #E2A93B;
+}
+.preview-night .preview-mini-card {
+  height: 14px;
+  background-color: #1F1F1F;
+  border: 1px solid #3D3D3D;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.preview-dayone,
+.preview-journal {
+  background-color: #F7F8FA;
+  border: 1px solid #E1E4E9;
+}
+.preview-dayone .preview-mini-header,
+.preview-journal .preview-mini-header {
   height: 10px;
   background-color: #2468C8;
   border-radius: 3px;
 }
-.preview-dayone .preview-mini-card {
+.preview-dayone .preview-mini-card,
+.preview-journal .preview-mini-card {
   height: 14px;
   background-color: #FFFFFF;
   border-radius: 4px;
@@ -279,19 +586,41 @@
   margin-bottom: 2px;
 }
 
-.preview-scrivener {
-  background-color: #EAE6DF;
+.preview-scrivener,
+.preview-manuscript {
+  background-color: #FAF8F5;
+  border: 1px solid #D3CCC0;
 }
-.preview-scrivener .preview-mini-header {
+.preview-scrivener .preview-mini-header,
+.preview-manuscript .preview-mini-header {
   height: 10px;
-  background-color: #D9D4CC;
+  background-color: #EAE6DF;
   border-radius: 2px;
 }
-.preview-scrivener .preview-mini-card {
+.preview-scrivener .preview-mini-card,
+.preview-manuscript .preview-mini-card {
   height: 14px;
   background-color: #FFFDF8;
   border: 1px dashed #C8C2B8;
   border-radius: 2px;
   margin-bottom: 2px;
 }
+
+.preview-hc {
+  background-color: #FFFFFF;
+  border: 1.5px solid #000000;
+}
+.preview-hc .preview-mini-header {
+  height: 10px;
+  background-color: #000000;
+  border-radius: 1px;
+}
+.preview-hc .preview-mini-card {
+  height: 14px;
+  background-color: #FFFFFF;
+  border: 1.5px solid #000000;
+  border-radius: 1px;
+  margin-bottom: 2px;
+}
+
 

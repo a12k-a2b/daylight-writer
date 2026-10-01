@@ -163,7 +163,7 @@ export class FocusModeEngine {
     this.attachEventListeners();
     this.applyModeClasses();
     if (this.mode !== 'none') {
-      this.updateFocus(true);
+      this.updateFocus(false);
     }
   }
 

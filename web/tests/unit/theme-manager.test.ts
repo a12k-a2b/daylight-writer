@@ -17,10 +17,10 @@ test('ThemeManager: initializes with default solos theme and catalogs all 3 them
 
   const manager = new ThemeManager();
   assert.strictEqual(manager.getTheme(), 'solos');
-  assert.strictEqual(AVAILABLE_THEMES.length, 3);
+  assert.strictEqual(AVAILABLE_THEMES.length, 5);
   assert.deepStrictEqual(
     AVAILABLE_THEMES.map((t) => t.id),
-    ['solos', 'dayone', 'scrivener']
+    ['solos', 'night', 'dayone', 'scrivener', 'hc']
   );
 });
 
@@ -42,6 +42,14 @@ test('ThemeManager: setTheme updates state, attributes, and notifies listeners',
     notifiedTheme = theme;
   });
 
+  // Switch to Night Paper theme
+  manager.setTheme('night');
+  assert.strictEqual(manager.getTheme(), 'night');
+  assert.strictEqual(notifiedTheme, 'night');
+  assert.strictEqual(win.document.documentElement.getAttribute('data-theme'), 'night');
+  assert.strictEqual(shell.getAttribute('data-theme'), 'night');
+  assert.ok(shell.classList.contains('theme-night'));
+
   // Switch to Day One iOS theme
   manager.setTheme('dayone');
   assert.strictEqual(manager.getTheme(), 'dayone');
@@ -58,9 +66,17 @@ test('ThemeManager: setTheme updates state, attributes, and notifies listeners',
   assert.strictEqual(shell.getAttribute('data-theme'), 'scrivener');
   assert.ok(shell.classList.contains('theme-scrivener'));
   assert.strictEqual(shell.classList.contains('theme-dayone'), false);
+
+  // Switch to Sunlight HC theme
+  manager.setTheme('hc');
+  assert.strictEqual(manager.getTheme(), 'hc');
+  assert.strictEqual(notifiedTheme, 'hc');
+  assert.strictEqual(win.document.documentElement.getAttribute('data-theme'), 'hc');
+  assert.strictEqual(shell.getAttribute('data-theme'), 'hc');
+  assert.ok(shell.classList.contains('theme-hc'));
 });
 
-test('ThemeManager: cycleTheme advances circularly across all 3 themes', () => {
+test('ThemeManager: cycleTheme advances circularly across all 5 themes', () => {
   const win = new Window();
   (globalThis as any).window = win;
   (globalThis as any).document = win.document;
@@ -69,13 +85,15 @@ test('ThemeManager: cycleTheme advances circularly across all 3 themes', () => {
   const manager = new ThemeManager();
   assert.strictEqual(manager.getTheme(), 'solos');
 
+  assert.strictEqual(manager.cycleTheme(), 'night');
   assert.strictEqual(manager.cycleTheme(), 'dayone');
   assert.strictEqual(manager.cycleTheme(), 'scrivener');
+  assert.strictEqual(manager.cycleTheme(), 'hc');
   assert.strictEqual(manager.cycleTheme(), 'solos');
-  assert.strictEqual(manager.cycleTheme(), 'dayone');
+  assert.strictEqual(manager.cycleTheme(), 'night');
 });
 
-test('SettingsModal: opens, renders 3 theme preview cards, and switches theme on card click', () => {
+test('SettingsModal: opens, renders 5 theme preview cards, and switches theme on card click', () => {
   const win = new Window();
   (globalThis as any).window = win;
   (globalThis as any).document = win.document;
@@ -97,7 +115,7 @@ test('SettingsModal: opens, renders 3 theme preview cards, and switches theme on
   assert.ok(overlay, 'Settings modal overlay should exist in DOM');
 
   const themeCards = overlay.querySelectorAll('.theme-card');
-  assert.strictEqual(themeCards.length, 3, 'Should render cards for all 3 themes');
+  assert.strictEqual(themeCards.length, 5, 'Should render cards for all 5 themes');
 
   // Click on Scrivener theme card
   const scrivenerCard = overlay.querySelector('.theme-card[data-theme-id="scrivener"]') as unknown as HTMLElement;

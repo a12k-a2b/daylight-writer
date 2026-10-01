@@ -8,7 +8,7 @@
  * - 'scrivener': Scrivener Classic macOS Writing Studio (Binder, folder/draft icons, corkboard index cards)
  */
 
-export type AppTheme = 'solos' | 'dayone' | 'scrivener';
+export type AppTheme = 'solos' | 'night' | 'dayone' | 'scrivener' | 'hc';
 
 export interface ThemeConfig {
   id: AppTheme;
@@ -27,6 +27,13 @@ export const AVAILABLE_THEMES: ThemeConfig[] = [
     icon: '☀️',
   },
   {
+    id: 'night',
+    name: 'Night Paper',
+    subtitle: 'Chalkboard & Amber',
+    description: 'Inverted dark canvas with soothing warm amber glow caret and low-glare nighttime authoring.',
+    icon: '🌙',
+  },
+  {
     id: 'dayone',
     name: 'Day One (iOS)',
     subtitle: 'Journaling Studio',
@@ -39,6 +46,13 @@ export const AVAILABLE_THEMES: ThemeConfig[] = [
     subtitle: 'Classic Mac Authoring',
     description: 'Muted binder sidebar, manuscript folder/draft icons, and corkboard index card thought notes.',
     icon: '📚',
+  },
+  {
+    id: 'hc',
+    name: 'Sunlight HC',
+    subtitle: 'Extreme Contrast',
+    description: 'Stark 2px black outlines and zero subtle grays engineered for direct glaring outdoor sunlight.',
+    icon: '⚡',
   },
 ];
 
@@ -82,7 +96,7 @@ export class ThemeManager {
    * Cycles to the next available theme in sequence.
    */
   public cycleTheme(): AppTheme {
-    const themeIds: AppTheme[] = ['solos', 'dayone', 'scrivener'];
+    const themeIds: AppTheme[] = ['solos', 'night', 'dayone', 'scrivener', 'hc'];
     const currentIndex = themeIds.indexOf(this.currentTheme);
     const nextIndex = (currentIndex + 1) % themeIds.length;
     const nextTheme = themeIds[nextIndex];
@@ -108,7 +122,15 @@ export class ThemeManager {
     const shell = document.querySelector('.dc1-shell');
     if (shell) {
       shell.setAttribute('data-theme', theme);
-      shell.classList.remove('theme-solos', 'theme-dayone', 'theme-scrivener');
+      shell.classList.remove(
+        'theme-solos',
+        'theme-night',
+        'theme-dayone',
+        'theme-scrivener',
+        'theme-hc',
+        'theme-journal',
+        'theme-manuscript'
+      );
       shell.classList.add(`theme-${theme}`);
     }
   }
@@ -118,9 +140,19 @@ export class ThemeManager {
       return 'solos';
     }
     try {
-      const saved = localStorage.getItem(THEME_STORAGE_KEY) as AppTheme | null;
-      if (saved && (saved === 'solos' || saved === 'dayone' || saved === 'scrivener')) {
-        return saved;
+      const saved = localStorage.getItem(THEME_STORAGE_KEY) as string | null;
+      if (saved) {
+        if (saved === 'journal') return 'dayone';
+        if (saved === 'manuscript') return 'scrivener';
+        if (
+          saved === 'solos' ||
+          saved === 'night' ||
+          saved === 'dayone' ||
+          saved === 'scrivener' ||
+          saved === 'hc'
+        ) {
+          return saved as AppTheme;
+        }
       }
     } catch {
       // Fallback
