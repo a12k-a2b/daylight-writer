@@ -252,11 +252,11 @@ export class DaylightWriterApp {
     });
     this.editor.init(scrollContainer, canvas, titleEl);
 
-    // 4. Initialize Focus Mode Engine
+    // 4. Initialize Focus Mode Engine (Default: ADHD Sentence Focus Mode)
     this.focusMode = new FocusModeEngine({
       canvasElement: canvas,
       shellElement: shell,
-      initialMode: 'none',
+      initialMode: 'sentence',
     });
 
     // 5. Initialize AI Service Adapter & Affordances (Milestone 4)

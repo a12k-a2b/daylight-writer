@@ -91,12 +91,21 @@ export class SettingsModal {
         <div class="modal-header settings-header">
           <div class="modal-title-group">
             <h2 class="modal-title">Settings & Appearance</h2>
-            <p class="modal-subtitle">Configure Daylight Writer interface themes and ergonomics</p>
+            <p class="modal-subtitle">hi future me 👋 · Configure Daylight Writer interface themes and ergonomics</p>
           </div>
           <button class="modal-close-btn" id="settings-close-btn" title="Close (Esc)" aria-label="Close settings">&times;</button>
         </div>
 
         <div class="settings-body thin-scrollbar">
+          <section class="settings-section">
+            <h3 class="settings-section-title">Focus & ADHD Mode</h3>
+            <p class="settings-section-hint">Active writing focus mode. Default: <strong>Sentence Focus (Active sentence sharp, surrounding text faded)</strong>.</p>
+            <div class="settings-future-me-banner" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--os-150); border: 1px solid var(--color-border-hairline); border-radius: var(--pill-radius); margin-top: 8px;">
+              <span style="font-size: 13px; font-weight: 600; color: var(--color-text-primary);">hi future me</span>
+              <span style="font-size: 11px; color: var(--color-text-secondary); font-family: var(--font-mono);">ADHD Sentence Focus (Default)</span>
+            </div>
+          </section>
+
           <section class="settings-section">
             <h3 class="settings-section-title">Interface Theme & Aesthetic</h3>
             <p class="settings-section-hint">Select a signature theme for sidebar chrome, cards, and inspectors while keeping the typewriter writing canvas 100% focused.</p>
@@ -141,7 +150,7 @@ export class SettingsModal {
         </div>
 
         <div class="modal-footer settings-footer">
-          <span class="settings-status-note">Theme applied live · Zero page refresh</span>
+          <span class="settings-status-note">hi future me · Theme applied live · Zero page refresh</span>
           <button class="modal-primary-btn" id="settings-done-btn">Done</button>
         </div>
       </div>

@@ -124,7 +124,7 @@ export function getNextFocusMode(current: FocusMode): FocusMode {
 export class FocusModeEngine {
   private canvas: HTMLElement;
   private shell: HTMLElement | null;
-  private mode: FocusMode = 'none';
+  private mode: FocusMode = 'sentence';
   private locale: string = 'en';
 
   private activeParagraph: HTMLElement | null = null;
@@ -149,7 +149,7 @@ export class FocusModeEngine {
     this.canvas = options.canvasElement;
     this.shell = options.shellElement || null;
     this.locale = options.locale || 'en';
-    this.mode = options.initialMode || 'none';
+    this.mode = options.initialMode || 'sentence';
 
     this.onSelectionChangeBound = this.handleSelectionChange.bind(this);
     this.onInputBound = this.handleInput.bind(this);
@@ -162,6 +162,9 @@ export class FocusModeEngine {
 
     this.attachEventListeners();
     this.applyModeClasses();
+    if (this.mode !== 'none') {
+      this.updateFocus(true);
+    }
   }
 
   public getMode(): FocusMode {
@@ -234,10 +237,16 @@ export class FocusModeEngine {
     if (this.mode === 'none') return;
 
     const sel = this.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
+    let targetParagraph: HTMLElement | null = null;
 
-    const range = sel.getRangeAt(0);
-    const targetParagraph = this.findEnclosingParagraph(range.startContainer);
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      targetParagraph = this.findEnclosingParagraph(range.startContainer);
+    }
+
+    if (!targetParagraph && force) {
+      targetParagraph = (this.canvas.querySelector('.editor-paragraph, p') as HTMLElement | null);
+    }
 
     if (!targetParagraph) {
       return;
