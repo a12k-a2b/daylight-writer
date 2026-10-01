@@ -947,7 +947,27 @@ mark.os-search-highlight {
 .header-left-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+}
+
+.header-title-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  max-width: 480px;
+}
+
+.doc-breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--os-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .doc-title {
@@ -956,16 +976,66 @@ mark.os-search-highlight {
   color: var(--color-text-primary);
   outline: none;
   cursor: text;
-  max-width: 540px;
+  max-width: 480px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding: 2px 6px;
+  padding: 2px 4px;
   border-radius: 4px;
 }
 
 .doc-title:focus {
   background-color: var(--color-surface-input);
+}
+
+.header-stats-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--os-400);
+  white-space: nowrap;
+  padding: 0 4px;
+  user-select: none;
+}
+
+.header-focus-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 100px;
+  background: var(--os-150);
+  border: 1px solid var(--color-border-hairline);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-color);
+}
+
+.header-focus-pill:hover {
+  background: var(--os-100);
+}
+
+.header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--pill-radius, 6px);
+  color: var(--color-text-primary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-color), color var(--transition-color);
+}
+
+.header-icon-btn:hover {
+  background-color: var(--os-100-alpha);
+  color: var(--os-1000);
 }
 
 .live-datetime {
@@ -974,6 +1044,48 @@ mark.os-search-highlight {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   user-select: none;
+}
+
+/* Zero-Chrome Bottom Whisper Bar (Claude & iA Writer Affordance) */
+.whisper-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+}
+
+.editor-header.is-typing-faded ~ .whisper-bar,
+.dc1-shell.zen-mode .whisper-bar,
+.whisper-bar.force-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.whisper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 4px 18px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--os-400);
+  white-space: nowrap;
+  border-radius: 100px;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.whisper-btn:hover {
+  color: var(--os-900);
+  background-color: var(--os-100-alpha);
 }
 
 /* Typewriter Scroll Container with 50% Top and Bottom Buffering */
@@ -992,6 +1104,9 @@ mark.os-search-highlight {
   padding: 0 24px;
   outline: none;
   min-height: 100%;
+  font-family: var(--editor-font-family, var(--font-body, monospace));
+  font-size: var(--editor-font-size, var(--font-size-base, 20px));
+  line-height: var(--editor-line-height, var(--line-height-base, 1.7));
 }
 
 .editor-paragraph {
@@ -1673,10 +1788,11 @@ mark.os-search-highlight {
 /* --------------------------------------------------------------------------
    Zen Mode (Zero-Chrome)
    -------------------------------------------------------------------------- */
-.dc1-shell.zen-mode .editor-header {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition-fade);
+.dc1-shell.zen-mode .editor-header:not(.force-visible) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-8px);
+  transition: opacity var(--transition-fade), transform var(--transition-fade);
 }
 
 .dc1-shell.zero-chrome .editor-canvas {

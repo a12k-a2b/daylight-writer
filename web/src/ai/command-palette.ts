@@ -57,14 +57,14 @@ export interface CommandPaletteOptions {
 }
 
 export const BUILT_IN_ACTIONS: QuickActionItem[] = [
-  { id: 'rewrite', label: 'Rewrite', description: 'Rephrase for clarity and cadence', instruction: 'summarize', glyph: '↺', shortcut: '1' },
-  { id: 'concise', label: 'Shorten', description: 'Remove filler and make concise', instruction: 'concise', glyph: '⇥⇤', shortcut: '2' },
-  { id: 'expand', label: 'Expand', description: 'Elaborate on core thesis with depth', instruction: 'expand', glyph: '⇤⇥', shortcut: '3' },
-  { id: 'analytical', label: 'Tone: Professional', description: 'Empirical precision and academic rigor', instruction: 'analytical', glyph: '§', shortcut: '4' },
-  { id: 'casual', label: 'Tone: Casual', description: 'Direct, conversational, and approachable', instruction: 'casual', glyph: '💬', shortcut: '5' },
-  { id: 'poetic', label: 'Tone: Literary', description: 'Lyrical imagery and evocative rhythm', instruction: 'poetic', glyph: '✦', shortcut: '6' },
-  { id: 'fix_grammar', label: 'Fix Grammar & Spelling', description: 'Correct syntax, duplicates, and voice', instruction: 'fix_grammar', glyph: '✓', shortcut: '7' },
-  { id: 'summarize', label: 'Summarize', description: 'Distill into key takeaways', instruction: 'summarize', glyph: '≡', shortcut: '8' },
+  { id: 'rewrite', label: 'Rewrite tone', description: 'Warmer, plainer, sharper', instruction: 'summarize', glyph: '↺', shortcut: '1' },
+  { id: 'summarize', label: 'Summarize', description: 'In one line', instruction: 'summarize', glyph: '≡', shortcut: '2' },
+  { id: 'expand', label: 'Expand thought', description: 'Add the next beat', instruction: 'expand', glyph: '⇤⇥', shortcut: '3' },
+  { id: 'fix_grammar', label: 'Check passive voice', description: 'Flag passive voice & clean syntax', instruction: 'fix_grammar', glyph: '✓', shortcut: '4' },
+  { id: 'concise', label: 'Fix flow', description: 'Smooth the handoff & tighten phrasing', instruction: 'concise', glyph: '⇥⇤', shortcut: '5' },
+  { id: 'casual', label: 'Tone: Casual', description: 'Direct, conversational, and approachable', instruction: 'casual', glyph: '💬', shortcut: '6' },
+  { id: 'analytical', label: 'Tone: Professional', description: 'Empirical precision and academic rigor', instruction: 'analytical', glyph: '§', shortcut: '7' },
+  { id: 'poetic', label: 'Tone: Literary', description: 'Lyrical imagery and evocative rhythm', instruction: 'poetic', glyph: '✦', shortcut: '8' },
 ];
 
 export const EXPORT_COMMANDS: QuickActionItem[] = [

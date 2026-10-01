@@ -80,25 +80,64 @@
       <main id="editor-viewport" class="editor-viewport">
         <header class="editor-header">
           <div class="header-left-group">
-            <button id="header-outline-btn" class="header-action-btn" title="Toggle Outline (Cmd+[)" aria-label="Toggle Outline">§ Outline</button>
-            <div
-              id="doc-title"
-              class="doc-title"
-              contenteditable="true"
-              spellcheck="false"
-              role="heading"
-              aria-level="1"
-              title="Click to edit title"
-            >
-              Untitled Document
+            <button id="header-outline-btn" class="header-action-btn header-icon-btn" title="Toggle Outline (Cmd+[)" aria-label="Library">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect>
+                <path d="M9.5 4.5v15"></path>
+              </svg>
+            </button>
+            <div class="header-title-stack">
+              <span id="doc-breadcrumb" class="doc-breadcrumb">Chapter 1 · [Draft]</span>
+              <div
+                id="doc-title"
+                class="doc-title"
+                contenteditable="true"
+                spellcheck="false"
+                role="heading"
+                aria-level="1"
+                title="Click to edit title"
+              >
+                Untitled Document
+              </div>
             </div>
           </div>
           <div class="header-right-group">
-            <button id="header-notes-btn" class="header-action-btn" title="Toggle Margin Notes (Cmd+])" aria-label="Toggle Margin Notes">✎ Notes</button>
+            <span id="header-word-count" class="header-stats-text">0 words</span>
+            <button id="header-focus-btn" class="header-action-btn header-focus-pill" title="Cycle Focus Mode" aria-label="Focus mode — tap to change">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="7.5"></circle>
+                <circle id="focus-pill-inner-circle" cx="12" cy="12" r="2.5" fill="currentColor"></circle>
+              </svg>
+              <span id="focus-pill-label">Sentence</span>
+            </button>
+            <button id="header-notes-btn" class="header-action-btn header-icon-btn" title="Toggle Margin Notes (Cmd+])" aria-label="Toggle Margin Notes">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3.5" y="4.5" width="17" height="15" rx="3"></rect>
+                <path d="M14.5 4.5v15"></path>
+                <path d="M16.8 9h1.4M16.8 12h1.4"></path>
+              </svg>
+            </button>
             <button id="header-theme-btn" class="header-action-btn" title="Cycle Theme: Sol:OS / Day One / Scrivener (Cmd+Alt+T)" aria-label="Cycle Theme">🎨 Theme</button>
-            <button id="header-settings-btn" class="header-action-btn header-settings-btn" title="Settings (Cmd+,)" aria-label="Settings">⚙</button>
+            <button id="header-settings-btn" class="header-action-btn header-icon-btn header-settings-btn" title="Settings (Cmd+,)" aria-label="Settings">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path>
+                <circle cx="16" cy="7" r="2"></circle>
+                <circle cx="10" cy="17" r="2"></circle>
+              </svg>
+            </button>
             <button id="header-collab-btn" class="header-action-btn" title="Live Collaboration (Cmd+Shift+C)" aria-label="Live Collaboration">Collab</button>
-            <button id="header-export-btn" class="header-action-btn" title="Export & Share (Cmd+Shift+E)" aria-label="Export & Share">Export</button>
+            <button id="header-export-btn" class="header-action-btn header-icon-btn" title="Export & Share (Cmd+Shift+E)" aria-label="Export & Share">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 15V4"></path>
+                <path d="M8 8l4-4 4 4"></path>
+                <path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13"></path>
+              </svg>
+            </button>
+            <button id="header-zen-btn" class="header-action-btn header-icon-btn" title="Hide Chrome (Zen Mode)" aria-label="Hide Chrome">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"></path>
+              </svg>
+            </button>
             <div id="sync-status-pill" class="sync-status-pill sync-state-synced" role="status" aria-live="polite">
               <span class="sync-status-glyph" aria-hidden="true">✓</span>
               <span class="sync-status-label">Synced</span>
@@ -121,6 +160,13 @@
           >
             <p data-block-id="p-0" class="editor-paragraph"><br /></p>
           </div>
+        </div>
+
+        <!-- Zero-Chrome Bottom Whisper Bar (Discreet iA Writer / Claude affordance) -->
+        <div id="whisper-bar" class="whisper-bar">
+          <button type="button" id="whisper-btn" class="whisper-btn" aria-label="Show controls">
+            <span id="whisper-label">0 words · Sentence Focus · tap for controls</span>
+          </button>
         </div>
       </main>
 

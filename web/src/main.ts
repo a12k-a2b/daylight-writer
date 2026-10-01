@@ -123,9 +123,9 @@ export class DaylightWriterApp {
       // 3. Attach UI, Editor, and Clock if in browser environment
       if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         (window as any).__daylightWriterApp = this;
+        this.setupEditor();
         this.setupThemes();
         this.setupClock();
-        this.setupEditor();
         this.setupDaylightBridgeClient();
         this.setupKeyboardShortcuts();
         this.setupDrawers();
@@ -159,9 +159,9 @@ export class DaylightWriterApp {
 
       if (typeof window !== 'undefined' && typeof document !== 'undefined') {
         (window as any).__daylightWriterApp = this;
+        this.setupEditor();
         this.setupThemes();
         this.setupClock();
-        this.setupEditor();
         this.setupDaylightBridgeClient();
         this.setupKeyboardShortcuts();
         this.setupDrawers();
@@ -247,6 +247,7 @@ export class DaylightWriterApp {
           }
           this.rightDrawer?.requestLayoutUpdate();
           this.scrollSync?.updateContentHeights();
+          this.updateWordCountAndMetrics();
         },
       },
     });
@@ -258,6 +259,23 @@ export class DaylightWriterApp {
       shellElement: shell,
       initialMode: 'sentence',
     });
+    this.updateFocusPills('sentence');
+
+    const headerFocusBtn = document.getElementById('header-focus-btn');
+    if (headerFocusBtn) {
+      headerFocusBtn.addEventListener('click', () => {
+        if (this.focusMode) {
+          const current = this.focusMode.getMode();
+          const next = current === 'sentence' ? 'paragraph' : (current === 'paragraph' ? 'none' : 'sentence');
+          this.focusMode.setMode(next);
+          this.updateFocusPills(next);
+          if (this.settingsModal) {
+            const segButtons = document.querySelectorAll('.settings-seg-btn');
+            segButtons.forEach((b) => b.classList.toggle('active', b.getAttribute('data-focus-mode') === next));
+          }
+        }
+      });
+    }
 
     // 5. Initialize AI Service Adapter & Affordances (Milestone 4)
     this.aiAdapter = new MockAIServiceAdapter({
@@ -479,6 +497,11 @@ export class DaylightWriterApp {
       if (this.scrollSync) {
         this.scrollSync.updateContentHeights();
       }
+      const breadcrumbEl = document.getElementById('doc-breadcrumb');
+      if (breadcrumbEl) {
+        breadcrumbEl.textContent = 'Chapter 1 · [Draft]';
+      }
+      this.updateWordCountAndMetrics();
     }
   }
 
@@ -802,6 +825,10 @@ export class DaylightWriterApp {
     this.settingsModal = new SettingsModal({
       container: document.body,
       themeManager: this.themeManager,
+      focusModeEngine: this.focusMode || undefined,
+      onFocusModeChanged: (mode) => {
+        this.updateFocusPills(mode);
+      },
       onThemeChanged: () => {
         const themeBtn = document.getElementById('header-theme-btn');
         if (themeBtn) {
@@ -878,6 +905,53 @@ export class DaylightWriterApp {
     });
 
     headerEl.addEventListener('mouseenter', revealHeader);
+
+    // Whisper bar click restores header
+    const whisperBtn = document.getElementById('whisper-btn');
+    if (whisperBtn) {
+      whisperBtn.addEventListener('click', () => {
+        revealHeader();
+        headerEl.classList.add('force-visible');
+        setTimeout(() => headerEl.classList.remove('force-visible'), 3000);
+      });
+    }
+
+    // Zen mode button toggles full zero-chrome view
+    const zenBtn = document.getElementById('header-zen-btn');
+    if (zenBtn) {
+      zenBtn.addEventListener('click', () => {
+        const shell = document.querySelector('.dc1-shell');
+        shell?.classList.toggle('zen-mode');
+      });
+    }
+  }
+
+  public updateWordCountAndMetrics(): void {
+    const content = this.editor ? this.editor.getContent() : (document.getElementById('editor-canvas')?.textContent || '');
+    const words = content.trim().length === 0 ? 0 : content.trim().split(/\s+/).length;
+    const headerCount = document.getElementById('header-word-count');
+    if (headerCount) {
+      headerCount.textContent = `${words} words`;
+    }
+    const whisperLabel = document.getElementById('whisper-label');
+    if (whisperLabel) {
+      const mode = this.focusMode ? this.focusMode.getMode() : 'sentence';
+      const modeName = mode === 'sentence' ? 'Sentence Focus' : (mode === 'paragraph' ? 'Paragraph Focus' : 'Focus Off');
+      whisperLabel.textContent = `${words} words · ${modeName} · tap for controls`;
+    }
+  }
+
+  public updateFocusPills(mode: string): void {
+    const focusLabel = document.getElementById('focus-pill-label');
+    const focusDot = document.getElementById('focus-pill-inner-circle');
+    if (focusLabel) {
+      focusLabel.textContent = mode === 'sentence' ? 'Sentence' : (mode === 'paragraph' ? 'Paragraph' : 'Focus Off');
+    }
+    if (focusDot) {
+      const r = mode === 'sentence' ? '2.5' : (mode === 'paragraph' ? '4.5' : '0');
+      focusDot.setAttribute('r', r);
+    }
+    this.updateWordCountAndMetrics();
   }
 
   /**
